@@ -1,0 +1,6 @@
+{
+  "name": "Mafia Analyzer",
+  "description": "ثبت مشاهدات، تارگت‌ها، آراء و محاسبه هوشمند و شفاف امتیاز مشکوک بودن در بازی مافیا",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
