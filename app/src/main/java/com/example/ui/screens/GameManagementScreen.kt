@@ -653,8 +653,7 @@ fun GameManagementScreen(
                     TextButton(onClick = { showNewGameDialog = false }) {
                         Text("انصراف", color = TextMutedDark)
                     }
-                },
-                containerColor = MafiaCardBg
+                }
             )
         }
     }
