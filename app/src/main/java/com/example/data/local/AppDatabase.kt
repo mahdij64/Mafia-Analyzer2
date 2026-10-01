@@ -16,9 +16,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         VoteEntity::class,
         ManualSuspicionEntity::class,
         AlgorithmWeightEntity::class,
-        SecretNoteEntity::class
+        SecretNoteEntity::class,
+        AiSettingsEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -66,6 +67,22 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS ai_settings (
+                        id INTEGER NOT NULL,
+                        baseUrl TEXT NOT NULL,
+                        apiKey TEXT NOT NULL,
+                        model TEXT NOT NULL,
+                        temperature REAL NOT NULL,
+                        updatedAt INTEGER NOT NULL,
+                        PRIMARY KEY(id)
+                    )
+                """.trimIndent())
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -73,8 +90,9 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "mafia_analyzer.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
-                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    // NOTE: No destructive fallback on purpose — every schema change must ship
+                    // with an explicit migration so user data is never silently wiped.
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                 INSTANCE = instance
                 instance

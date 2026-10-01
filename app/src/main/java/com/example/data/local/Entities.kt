@@ -2,6 +2,7 @@ package com.example.data.local
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
@@ -180,3 +181,37 @@ data class SecretNoteEntity(
     val misdirectionSuggestion: String = "",
     val timestamp: Long = System.currentTimeMillis()
 )
+
+/**
+ * Application-level AI provider configuration (single row, id = 0).
+ *
+ * The app talks to any OpenAI-compatible endpoint (e.g. a 9router deployment):
+ * - GET  {baseUrl}/models            → list of available models (shown in the combo box)
+ * - POST {baseUrl}/chat/completions  → chat/analysis requests
+ *
+ * When not configured, the analyzer falls back to the Gemini REST API key from
+ * BuildConfig (injected via the secrets plugin) and finally to the local
+ * on-device heuristic analysis.
+ */
+@Entity(tableName = "ai_settings")
+data class AiSettingsEntity(
+    @PrimaryKey
+    val id: Int = SINGLETON_ID,
+    val baseUrl: String = DEFAULT_BASE_URL,
+    val apiKey: String = "",
+    val model: String = "",
+    val temperature: Float = 0.4f,
+    val updatedAt: Long = System.currentTimeMillis()
+) {
+    /** True when the user has provided everything needed to call the router. */
+    @get:Ignore
+    val isRouterConfigured: Boolean
+        get() = baseUrl.isNotBlank() && apiKey.isNotBlank() && model.isNotBlank()
+
+    companion object {
+        const val SINGLETON_ID = 0
+
+        /** Default OpenAI-compatible endpoint (9router). The user only needs to paste an API key. */
+        const val DEFAULT_BASE_URL = "https://9router-production-e6c9.up.railway.app/v1"
+    }
+}

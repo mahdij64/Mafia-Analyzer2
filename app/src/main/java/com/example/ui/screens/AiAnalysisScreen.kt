@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.ai.AiAnalysisResult
+import com.example.data.local.AiSettingsEntity
 import com.example.data.local.GameEntity
 import com.example.data.model.GameStage
 import com.example.ui.components.PersianConfirmDialog
@@ -31,6 +32,7 @@ fun AiAnalysisScreen(
     activeGame: GameEntity?,
     currentStageIndex: Int,
     aiResult: AiAnalysisResult?,
+    aiSettings: AiSettingsEntity? = null,
     onRunAnalysis: () -> Unit,
     onClearAnalysis: () -> Unit,
     modifier: Modifier = Modifier
@@ -88,6 +90,15 @@ fun AiAnalysisScreen(
                                 text = "بررسی چندوجهی تارگت‌ها، تناقض‌ها، تقابل‌ها و خطوط ائتلاف تا ${stage.title}",
                                 fontSize = 12.sp,
                                 color = TextSecondaryDark
+                            )
+                            Text(
+                                text = if (aiSettings?.isRouterConfigured == true) {
+                                    "🔌 سرویس فعال: مدل ${aiSettings.model}"
+                                } else {
+                                    "📴 سرویس خارجی تنظیم نشده — از تحلیلگر محلی/کلید داخلی استفاده می‌شود (تنظیمات ← هوش مصنوعی)"
+                                },
+                                fontSize = 11.sp,
+                                color = if (aiSettings?.isRouterConfigured == true) SuspicionGreen else TextMutedDark
                             )
                         }
 
@@ -187,12 +198,21 @@ fun AiAnalysisScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "نتایج گزارش تحلیلی:",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = MafiaGold
-                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "نتایج گزارش تحلیلی:",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        color = MafiaGold
+                                    )
+                                    if (aiResult.providerLabel.isNotBlank()) {
+                                        Text(
+                                            text = "ارائه‌دهنده: ${aiResult.providerLabel}",
+                                            fontSize = 11.sp,
+                                            color = TextMutedDark
+                                        )
+                                    }
+                                }
 
                                 IconButton(
                                     onClick = {

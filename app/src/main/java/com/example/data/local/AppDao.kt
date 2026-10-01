@@ -302,4 +302,14 @@ interface AppDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveWeights(weights: AlgorithmWeightEntity)
+
+    // --- AI SETTINGS (app-level singleton row, id = 0) ---
+    @Query("SELECT * FROM ai_settings WHERE id = 0 LIMIT 1")
+    fun getAiSettings(): Flow<AiSettingsEntity?>
+
+    @Query("SELECT * FROM ai_settings WHERE id = 0 LIMIT 1")
+    suspend fun getAiSettingsDirect(): AiSettingsEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAiSettings(settings: AiSettingsEntity)
 }

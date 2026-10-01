@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.ai.AiAnalysisResult
+import com.example.data.local.AiSettingsEntity
 import com.example.data.local.GameEntity
 import com.example.data.local.PlayerEntity
 import com.example.data.local.PlayerNoteEntity
@@ -34,6 +35,7 @@ fun AnalysisContainerScreen(
     notes: List<PlayerNoteEntity>,
     speechGuide: SpeechGuide?,
     aiResult: AiAnalysisResult?,
+    aiSettings: AiSettingsEntity? = null,
     initialSubTab: Int = 0,
     onStageSelected: (Int) -> Unit,
     onUpdateMafiaTeammates: (Set<Long>) -> Unit = {},
@@ -132,6 +134,7 @@ fun AnalysisContainerScreen(
                     activeGame = activeGame,
                     currentStageIndex = currentStageIndex,
                     aiResult = aiResult,
+                    aiSettings = aiSettings,
                     onRunAnalysis = onRunAiAnalysis,
                     onClearAnalysis = onClearAiAnalysis
                 )

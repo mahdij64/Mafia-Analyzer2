@@ -4,7 +4,11 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.ai.AiAnalysisResult
+import com.example.data.ai.AiModelInfo
+import com.example.data.ai.ChatMessage
 import com.example.data.ai.GeminiMafiaAnalyzer
+import com.example.data.ai.OpenAiCompatClient
+import com.example.data.local.AiSettingsEntity
 import com.example.data.local.AlgorithmWeightEntity
 import com.example.data.local.AppDatabase
 import com.example.data.local.GameEntity
@@ -30,6 +34,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -47,6 +52,22 @@ data class MafiaUiState(
     val searchQuery: String = "",
     val aiResult: AiAnalysisResult? = null,
     val snackbarMessage: String? = null
+)
+
+/** State of the "fetch models" action in the AI settings screen. */
+sealed class AiModelsFetchState {
+    object Idle : AiModelsFetchState()
+    object Loading : AiModelsFetchState()
+    data class Success(val count: Int) : AiModelsFetchState()
+    data class Error(val message: String) : AiModelsFetchState()
+}
+
+/** One bubble in the AI settings test-chat conversation. */
+data class TestChatMessage(
+    val isFromUser: Boolean,
+    val content: String,
+    val isError: Boolean = false,
+    val timestamp: Long = System.currentTimeMillis()
 )
 
 class MafiaViewModel(application: Application) : AndroidViewModel(application) {
@@ -557,6 +578,7 @@ class MafiaViewModel(application: Application) : AndroidViewModel(application) {
         val vList = votes.value
         val sList = calculatedScores.value
         val currentStage = _currentStageIndex.value
+        val settings = aiSettings.value
 
         _aiResult.value = AiAnalysisResult.Loading
         viewModelScope.launch {
@@ -567,7 +589,8 @@ class MafiaViewModel(application: Application) : AndroidViewModel(application) {
                 targets = tList,
                 notes = nList,
                 votes = vList,
-                scores = sList
+                scores = sList,
+                aiSettings = settings
             )
             _aiResult.value = result
         }
@@ -575,6 +598,94 @@ class MafiaViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearAiAnalysis() {
         _aiResult.value = null
+    }
+
+    // ------------------------------------------------------------------
+    // AI PROVIDER SETTINGS (OpenAI-compatible router, e.g. 9router)
+    // ------------------------------------------------------------------
+
+    val aiSettings: StateFlow<AiSettingsEntity> = repository.aiSettings
+        .map { it ?: AiSettingsEntity() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AiSettingsEntity())
+
+    fun saveAiSettings(settings: AiSettingsEntity) {
+        viewModelScope.launch {
+            repository.saveAiSettings(settings)
+            showSnackbar("تنظیمات هوش مصنوعی ذخیره شد ✅")
+        }
+    }
+
+    private val _aiModels = MutableStateFlow<List<AiModelInfo>>(emptyList())
+    val aiModels: StateFlow<List<AiModelInfo>> = _aiModels.asStateFlow()
+
+    private val _aiModelsFetchState = MutableStateFlow<AiModelsFetchState>(AiModelsFetchState.Idle)
+    val aiModelsFetchState: StateFlow<AiModelsFetchState> = _aiModelsFetchState.asStateFlow()
+
+    /**
+     * Fetches the model list from the router. Uses the values passed from the screen
+     * (the drafts the user is currently editing) so it works even before saving.
+     */
+    fun fetchAiModels(baseUrl: String, apiKey: String) {
+        if (baseUrl.isBlank() || apiKey.isBlank()) {
+            _aiModelsFetchState.value = AiModelsFetchState.Error("ابتدا آدرس سرویس و کلید API را وارد کنید")
+            return
+        }
+        _aiModelsFetchState.value = AiModelsFetchState.Loading
+        viewModelScope.launch {
+            OpenAiCompatClient.fetchModels(baseUrl, apiKey)
+                .onSuccess { list ->
+                    _aiModels.value = list
+                    _aiModelsFetchState.value =
+                        if (list.isEmpty()) AiModelsFetchState.Error("سرویس لیست مدل خالی برگرداند")
+                        else AiModelsFetchState.Success(list.size)
+                }
+                .onFailure { e ->
+                    _aiModelsFetchState.value = AiModelsFetchState.Error(e.message ?: "خطای ناشناخته")
+                }
+        }
+    }
+
+    // --- Test chat ---
+    private val _testChatMessages = MutableStateFlow<List<TestChatMessage>>(emptyList())
+    val testChatMessages: StateFlow<List<TestChatMessage>> = _testChatMessages.asStateFlow()
+
+    private val _testChatLoading = MutableStateFlow(false)
+    val testChatLoading: StateFlow<Boolean> = _testChatLoading.asStateFlow()
+
+    fun sendTestChatMessage(text: String) {
+        val trimmed = text.trim()
+        if (trimmed.isBlank() || _testChatLoading.value) return
+
+        val s = aiSettings.value
+        if (!s.isRouterConfigured) {
+            showSnackbar("برای تست چت، ابتدا آدرس سرویس، کلید API و مدل را وارد و ذخیره کنید")
+            return
+        }
+
+        _testChatMessages.value = _testChatMessages.value + TestChatMessage(isFromUser = true, content = trimmed)
+        _testChatLoading.value = true
+        viewModelScope.launch {
+            // Send the whole (non-error) conversation so the model has context
+            val history = _testChatMessages.value
+                .filterNot { it.isError }
+                .map { ChatMessage(if (it.isFromUser) "user" else "assistant", it.content) }
+            OpenAiCompatClient.chat(s.baseUrl, s.apiKey, s.model, history, s.temperature)
+                .onSuccess { reply ->
+                    _testChatMessages.value = _testChatMessages.value + TestChatMessage(isFromUser = false, content = reply)
+                }
+                .onFailure { e ->
+                    _testChatMessages.value = _testChatMessages.value + TestChatMessage(
+                        isFromUser = false,
+                        content = e.message ?: "خطای ناشناخته",
+                        isError = true
+                    )
+                }
+            _testChatLoading.value = false
+        }
+    }
+
+    fun clearTestChat() {
+        _testChatMessages.value = emptyList()
     }
 
     fun showSnackbar(message: String) {

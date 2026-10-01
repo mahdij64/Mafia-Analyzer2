@@ -59,6 +59,11 @@ fun MainScreen(viewModel: MafiaViewModel) {
         val isStealthMafiaMode by viewModel.isStealthMafiaMode.collectAsStateWithLifecycle()
         val secretNotes by viewModel.secretNotes.collectAsStateWithLifecycle()
         val stealthAnalysis by viewModel.stealthAnalysis.collectAsStateWithLifecycle()
+        val aiSettings by viewModel.aiSettings.collectAsStateWithLifecycle()
+        val aiModels by viewModel.aiModels.collectAsStateWithLifecycle()
+        val aiModelsFetchState by viewModel.aiModelsFetchState.collectAsStateWithLifecycle()
+        val testChatMessages by viewModel.testChatMessages.collectAsStateWithLifecycle()
+        val testChatLoading by viewModel.testChatLoading.collectAsStateWithLifecycle()
         val haptic = LocalHapticFeedback.current
         val snackbarMsg by viewModel.snackbarMessage.collectAsStateWithLifecycle()
 
@@ -279,6 +284,7 @@ fun MainScreen(viewModel: MafiaViewModel) {
                         notes = notes,
                         speechGuide = speechGuide,
                         aiResult = aiResult,
+                        aiSettings = aiSettings,
                         initialSubTab = analysisInitialSubTab,
                         onStageSelected = { viewModel.setStage(it) },
                         onUpdateMafiaTeammates = { viewModel.updateMafiaTeammates(it) },
@@ -306,6 +312,12 @@ fun MainScreen(viewModel: MafiaViewModel) {
                                 onClick = { settingsTab = 1 },
                                 text = { Text("ضرایب الگوریتم و تنظیمات", fontWeight = if (settingsTab == 1) FontWeight.Bold else FontWeight.Normal) }
                             )
+                            Tab(
+                                selected = settingsTab == 2,
+                                onClick = { settingsTab = 2 },
+                                text = { Text("هوش مصنوعی 🤖", fontWeight = if (settingsTab == 2) FontWeight.Bold else FontWeight.Normal) },
+                                modifier = Modifier.testTag("settings_tab_ai")
+                            )
                         }
 
                         if (settingsTab == 0) {
@@ -327,10 +339,22 @@ fun MainScreen(viewModel: MafiaViewModel) {
                                 onRenamePlayer = { pId, newName -> viewModel.renamePlayer(pId, newName) },
                                 onMovePlayer = { p, dir -> viewModel.movePlayer(p, dir) }
                             )
-                        } else {
+                        } else if (settingsTab == 1) {
                             SettingsScreen(
                                 weights = algorithmWeights,
                                 onSaveWeights = { viewModel.updateWeights(it) }
+                            )
+                        } else {
+                            AiSettingsScreen(
+                                settings = aiSettings,
+                                models = aiModels,
+                                modelsFetchState = aiModelsFetchState,
+                                testChatMessages = testChatMessages,
+                                testChatLoading = testChatLoading,
+                                onSaveSettings = { viewModel.saveAiSettings(it) },
+                                onFetchModels = { url, key -> viewModel.fetchAiModels(url, key) },
+                                onSendTestChat = { viewModel.sendTestChatMessage(it) },
+                                onClearTestChat = { viewModel.clearTestChat() }
                             )
                         }
                     }

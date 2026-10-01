@@ -1,6 +1,7 @@
 package com.example.data.ai
 
 import com.example.BuildConfig
+import com.example.data.local.AiSettingsEntity
 import com.example.data.local.PlayerEntity
 import com.example.data.local.PlayerNoteEntity
 import com.example.data.local.TargetEntity
@@ -18,12 +19,15 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 sealed class AiAnalysisResult {
-    data class Success(val markdownContent: String) : AiAnalysisResult()
+    data class Success(val markdownContent: String, val providerLabel: String = "") : AiAnalysisResult()
     data class Error(val message: String, val fallbackAnalysis: String? = null) : AiAnalysisResult()
     object Loading : AiAnalysisResult()
 }
 
 object GeminiMafiaAnalyzer {
+
+    /** Gemini model used only for the legacy fallback path (when no router is configured). */
+    private const val GEMINI_MODEL = "gemini-3.5-flash"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(45, TimeUnit.SECONDS)
@@ -38,9 +42,43 @@ object GeminiMafiaAnalyzer {
         targets: List<TargetEntity>,
         notes: List<PlayerNoteEntity>,
         votes: List<VoteEntity>,
-        scores: List<PlayerScoreAnalysis>
+        scores: List<PlayerScoreAnalysis>,
+        aiSettings: AiSettingsEntity? = null
     ): AiAnalysisResult = withContext(Dispatchers.IO) {
         val prompt = buildAnalysisPrompt(gameName, currentStage, players, targets, notes, votes, scores)
+
+        // 1) Preferred path: user-configured OpenAI-compatible router (e.g. 9router)
+        if (aiSettings != null && aiSettings.isRouterConfigured) {
+            val routerLabel = "مدل ${aiSettings.model}"
+            OpenAiCompatClient.chat(
+                baseUrl = aiSettings.baseUrl,
+                apiKey = aiSettings.apiKey,
+                model = aiSettings.model,
+                messages = listOf(ChatMessage.user(prompt)),
+                temperature = aiSettings.temperature
+            ).let { result ->
+                return@withContext result.fold(
+                    onSuccess = { text ->
+                        if (text.isBlank()) {
+                            AiAnalysisResult.Error(
+                                message = "سرویس پاسخ متنی خالی برگرداند ($routerLabel). تحلیل هوشمند محلی ارائه شد.",
+                                fallbackAnalysis = generateLocalDeepAnalysis(gameName, currentStage, players, targets, notes, votes, scores)
+                            )
+                        } else {
+                            AiAnalysisResult.Success(markdownContent = text, providerLabel = routerLabel)
+                        }
+                    },
+                    onFailure = { e ->
+                        AiAnalysisResult.Error(
+                            message = "خطا در ارتباط با سرویس پیکربندی‌شده ($routerLabel): ${e.message ?: "خطای ناشناخته"}. تحلیل هوشمند محلی ارائه شد.",
+                            fallbackAnalysis = generateLocalDeepAnalysis(gameName, currentStage, players, targets, notes, votes, scores)
+                        )
+                    }
+                )
+            }
+        }
+
+        // 2) Legacy fallback: Gemini REST API with the key injected via the secrets plugin
         val apiKey = try {
             BuildConfig.GEMINI_API_KEY
         } catch (e: Throwable) {
@@ -48,14 +86,15 @@ object GeminiMafiaAnalyzer {
         }
 
         if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
-            // Generate rich local deep analytical report if API key not set
+            // Generate rich local deep analytical report if no provider is available
             return@withContext AiAnalysisResult.Success(
-                generateLocalDeepAnalysis(gameName, currentStage, players, targets, notes, votes, scores)
+                markdownContent = generateLocalDeepAnalysis(gameName, currentStage, players, targets, notes, votes, scores),
+                providerLabel = "تحلیلگر محلی (آفلاین)"
             )
         }
 
         try {
-            val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=$apiKey"
+            val url = "https://generativelanguage.googleapis.com/v1beta/models/$GEMINI_MODEL:generateContent?key=$apiKey"
 
             val rootJson = JSONObject().apply {
                 val contents = JSONArray().apply {
@@ -104,10 +143,10 @@ object GeminiMafiaAnalyzer {
             val text = parts?.optJSONObject(0)?.optString("text")
 
             if (!text.isNullOrBlank()) {
-                AiAnalysisResult.Success(text)
+                AiAnalysisResult.Success(markdownContent = text, providerLabel = "Gemini ($GEMINI_MODEL)")
             } else {
                 val fallback = generateLocalDeepAnalysis(gameName, currentStage, players, targets, notes, votes, scores)
-                AiAnalysisResult.Success(fallback)
+                AiAnalysisResult.Success(markdownContent = fallback, providerLabel = "تحلیلگر محلی (آفلاین)")
             }
         } catch (e: Exception) {
             val fallback = generateLocalDeepAnalysis(gameName, currentStage, players, targets, notes, votes, scores)

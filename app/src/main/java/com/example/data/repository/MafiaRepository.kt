@@ -1,5 +1,6 @@
 package com.example.data.repository
 
+import com.example.data.local.AiSettingsEntity
 import com.example.data.local.AlgorithmWeightEntity
 import com.example.data.local.AppDao
 import com.example.data.local.GameEntity
@@ -321,4 +322,20 @@ class MafiaRepository(private val dao: AppDao) {
     fun getWeights(gameId: Long): Flow<AlgorithmWeightEntity?> = dao.getWeightsForGame(gameId)
 
     suspend fun saveWeights(weights: AlgorithmWeightEntity) = dao.saveWeights(weights)
+
+    // --- AI SETTINGS (app-level, not tied to a game) ---
+    val aiSettings: Flow<AiSettingsEntity?> = dao.getAiSettings()
+
+    suspend fun getAiSettingsDirect(): AiSettingsEntity? = dao.getAiSettingsDirect()
+
+    suspend fun saveAiSettings(settings: AiSettingsEntity) =
+        dao.upsertAiSettings(
+            settings.copy(
+                id = AiSettingsEntity.SINGLETON_ID,
+                baseUrl = settings.baseUrl.trim().trimEnd('/'),
+                apiKey = settings.apiKey.trim(),
+                model = settings.model.trim(),
+                updatedAt = System.currentTimeMillis()
+            )
+        )
 }
