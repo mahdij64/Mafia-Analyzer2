@@ -1,0 +1,2488 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#101216">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>تحلیل‌گر مافیا</title>
+<style>
+:root{
+  --bg:#101216; --card:#1A1D24; --card2:#222731; --variant:#2A303D; --border:#373E4F;
+  --crimson:#E53935; --crimson-l:#FF5252; --crimson-d:#B71C1C;
+  --gold:#FFD54F; --gold-d:#FFB300;
+  --green:#26A69A; --yellow:#FFB300; --orange:#FF7043; --red:#E53935; --mafia-green:#4CAF50;
+  --txt:#F3F4F6; --txt2:#9CA3AF; --txt3:#6B7280;
+  --purple:#B388FF; --purple-d:#7E57C2;
+  --radius:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:var(--bg); color:var(--txt);
+  font-family:Vazirmatn,Tahoma,'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:14px; line-height:1.7;
+  display:flex; flex-direction:column; height:100dvh; overflow:hidden;
+  user-select:none; -webkit-user-select:none;
+}
+/* ---------- Top bar ---------- */
+#topbar{
+  flex:0 0 auto; display:flex; align-items:center; gap:8px;
+  padding:calc(8px + env(safe-area-inset-top)) 12px 8px;
+  background:var(--bg); border-bottom:1px solid var(--border); z-index:20;
+}
+#app-title{font-weight:800;font-size:16px;white-space:nowrap;cursor:pointer}
+#stealth-dot{color:rgba(229,57,53,.55);font-size:12px;display:none}
+#stealth-dot.on{display:inline}
+.stage-chip{
+  background:rgba(229,57,53,.18); border:1px solid rgba(229,57,53,.5);
+  color:var(--crimson-l); font-size:11px; font-weight:700;
+  padding:2px 9px; border-radius:8px; white-space:nowrap;
+}
+#topbar-game{
+  margin-right:auto; margin-left:0; background:none; border:none; color:var(--gold);
+  font-size:12px; font-weight:600; font-family:inherit; cursor:pointer;
+  max-width:38vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  display:flex; align-items:center; gap:2px;
+}
+/* ---------- Main ---------- */
+#main{flex:1 1 auto; overflow-y:auto; overscroll-behavior:contain; padding:12px 12px 20px;}
+.tab{display:none}
+.tab.active{display:block}
+/* ---------- Bottom nav ---------- */
+#bottomnav{
+  flex:0 0 auto; display:flex; background:var(--card);
+  border-top:1px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom); z-index:20;
+}
+.nav-btn{
+  flex:1; background:none; border:none; color:var(--txt2); font-family:inherit;
+  padding:8px 2px 7px; display:flex; flex-direction:column; align-items:center; gap:2px;
+  cursor:pointer; font-size:10.5px; border-radius:10px;
+}
+.nav-btn .ico{font-size:19px;line-height:1}
+.nav-btn.active{color:var(--crimson);font-weight:800;background:rgba(183,28,28,.22)}
+/* ---------- Cards & text ---------- */
+.card{
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:14px; margin-bottom:12px;
+}
+.card h3{margin:0 0 4px;font-size:15px;color:var(--gold)}
+.card h3.purple{color:var(--purple)}
+.card h3.green{color:var(--green)}
+.card .sub{font-size:11.5px;color:var(--txt2);margin-bottom:10px}
+.muted{color:var(--txt2)} .tiny{font-size:11px;color:var(--txt3)}
+b.gold{color:var(--gold)}
+hr.sep{border:none;border-top:1px solid var(--border);margin:12px 0}
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--variant); color:var(--txt); border:1px solid var(--border);
+  border-radius:10px; padding:9px 14px; font-family:inherit; font-size:13px;
+  font-weight:700; cursor:pointer; min-height:42px;
+}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.crimson{background:var(--crimson);border-color:var(--crimson)}
+.btn.crimson-d{background:var(--crimson-d);border-color:var(--crimson-d)}
+.btn.purple{background:var(--purple-d);border-color:var(--purple-d)}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#20180a}
+.btn.green{background:var(--green);border-color:var(--green);color:#04211e}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:32px;padding:4px 10px;font-size:12px;border-radius:8px}
+.btn.block{width:100%}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-row .btn{flex:1}
+/* ---------- Chips / stage selector ---------- */
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;background:var(--card2);border:1px solid var(--border);color:var(--txt2);
+  border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;
+}
+.chip.active{background:rgba(229,57,53,.2);border-color:var(--crimson);color:var(--crimson-l)}
+.chip.locked{opacity:.45}
+/* ---------- Circular table ---------- */
+#table-wrap{position:relative;width:min(94vw,430px);aspect-ratio:1/1;margin:6px auto 4px}
+#table-center{
+  position:absolute;inset:31%;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#232833,#14171d 70%);
+  border:1px solid var(--border); display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;gap:2px;padding:6px;
+  box-shadow:0 0 40px rgba(0,0,0,.5) inset;
+}
+#table-center .tc-stage{font-size:12px;font-weight:800;color:var(--gold)}
+#table-center .tc-game{font-size:10px;color:var(--txt3);max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#table-center .tc-hint{font-size:9.5px;color:var(--txt3)}
+.seat{
+  position:absolute;width:62px;transform:translate(50%,-50%);
+  display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;
+  background:none;border:none;padding:0;font-family:inherit;
+}
+.seat .seat-circle{
+  width:46px;height:46px;border-radius:50%;
+  background:var(--card2);border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:var(--txt);position:relative;
+  transition:border-color .15s, box-shadow .15s;
+}
+.seat .seat-name{font-size:9.5px;color:var(--txt2);max-width:66px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.seat .seat-score{font-size:9px;font-weight:800}
+.seat .seat-num{
+  position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;
+  background:var(--variant);border:1px solid var(--border);
+  font-size:8.5px;color:var(--txt3);display:flex;align-items:center;justify-content:center;
+}
+.seat.src .seat-circle{border-color:var(--gold);box-shadow:0 0 12px rgba(255,213,79,.55)}
+.seat.tgt .seat-circle{border-color:var(--crimson);box-shadow:0 0 12px rgba(229,57,53,.6);background:rgba(183,28,28,.35)}
+.seat.dead{opacity:.42}
+.seat.dead .seat-circle{border-color:#555}
+.seat.owner .seat-circle::after{content:"👑";position:absolute;bottom:-7px;left:-4px;font-size:10px}
+.seat.mafia-mate .seat-circle::after{content:"🗡️";position:absolute;bottom:-7px;left:-4px;font-size:10px}
+.score-g{color:var(--green)}.score-y{color:var(--yellow)}.score-o{color:var(--orange)}.score-r{color:var(--crimson-l)}
+/* ---------- Selection bar ---------- */
+#sel-bar{
+  display:none;background:var(--card2);border:1px solid var(--gold);border-radius:12px;
+  padding:10px;margin:4px 0 12px;gap:8px;align-items:center;flex-wrap:wrap;
+}
+#sel-bar.show{display:flex}
+/* ---------- Lists / rows ---------- */
+.row{
+  display:flex;align-items:center;gap:8px;padding:9px 10px;
+  background:var(--card2);border:1px solid var(--border);border-radius:10px;margin-bottom:7px;
+}
+.row.dead{opacity:.5}
+.row .r-name{font-weight:700;font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .r-side{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.iconbtn{
+  background:var(--variant);border:1px solid var(--border);color:var(--txt2);
+  border-radius:8px;min-width:32px;height:32px;font-size:14px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;font-family:inherit;padding:0 6px;
+}
+.iconbtn.red{color:var(--crimson-l);border-color:rgba(229,57,53,.4)}
+.iconbtn.gold{color:var(--gold);border-color:rgba(255,213,79,.4)}
+/* ---------- Score bar ---------- */
+.score-badge{
+  min-width:44px;text-align:center;padding:3px 8px;border-radius:8px;
+  font-weight:800;font-size:13px;border:1px solid;
+}
+.bar{height:6px;background:var(--variant);border-radius:4px;overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;border-radius:4px}
+/* ---------- Factors ---------- */
+.factor{border-radius:9px;padding:7px 10px;margin-top:6px;font-size:12px;border:1px solid}
+.factor.pos{background:rgba(229,57,53,.1);border-color:rgba(229,57,53,.35)}
+.factor.neg{background:rgba(38,166,154,.1);border-color:rgba(38,166,154,.35)}
+.factor .f-head{display:flex;justify-content:space-between;gap:8px;font-weight:700}
+.factor.pos .f-head{color:var(--crimson-l)} .factor.neg .f-head{color:var(--green)}
+.factor .f-desc{color:var(--txt2);font-size:11px}
+/* ---------- Forms ---------- */
+label.fl{display:block;font-size:12px;color:var(--txt2);margin:10px 0 4px;font-weight:700}
+input[type=text],input[type=password],input[type=number],input[type=url],select,textarea{
+  width:100%;background:var(--card2);border:1px solid var(--border);color:var(--txt);
+  border-radius:10px;padding:10px;font-family:inherit;font-size:16px;outline:none;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--purple)}
+textarea{font-size:14px;resize:vertical;min-height:84px;line-height:1.9}
+.ltr{direction:ltr;text-align:left;font-size:14px!important}
+select option{background:var(--card2)}
+input[type=range]{width:100%;accent-color:var(--gold);background:transparent}
+.inline-range{display:flex;align-items:center;gap:8px}
+.inline-range input[type=range]{flex:1}
+.inline-range .rv{min-width:38px;text-align:center;font-weight:800;color:var(--gold);font-size:13px}
+/* ---------- Snackbar ---------- */
+#snackbar{
+  position:fixed;bottom:calc(74px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--card2);border:1px solid var(--border);color:var(--txt);
+  padding:10px 16px;border-radius:12px;font-size:12.5px;font-weight:600;
+  opacity:0;pointer-events:none;transition:all .25s;z-index:120;max-width:92vw;text-align:center;
+  box-shadow:0 6px 24px rgba(0,0,0,.5);
+}
+#snackbar.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ---------- Bottom sheet ---------- */
+#sheet-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+#sheet-backdrop.show{opacity:1;pointer-events:auto}
+#sheet{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:var(--card);border:1px solid var(--border);border-bottom:none;
+  border-radius:18px 18px 0 0;padding:14px 14px calc(16px + env(safe-area-inset-bottom));
+  transform:translateY(105%);transition:transform .25s;max-height:82dvh;overflow-y:auto;
+}
+#sheet.show{transform:translateY(0)}
+#sheet h3{margin:2px 0 10px;font-size:15px;color:var(--gold)}
+#sheet .grabber{width:44px;height:4px;border-radius:3px;background:var(--variant);margin:0 auto 10px}
+/* ---------- Chat ---------- */
+#chat-box{
+  background:var(--bg);border:1px solid var(--border);border-radius:12px;
+  padding:10px;min-height:80px;max-height:300px;overflow-y:auto;margin-bottom:10px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.bubble{max-width:86%;padding:8px 12px;border-radius:14px;font-size:12.5px;line-height:1.8;white-space:pre-wrap;word-break:break-word;user-select:text;-webkit-user-select:text}
+.bubble.me{align-self:flex-end;background:rgba(126,87,194,.4);border:1px solid rgba(179,136,255,.5)}
+.bubble.ai{align-self:flex-start;background:var(--variant);border:1px solid var(--border)}
+.bubble.err{align-self:flex-start;background:rgba(183,28,28,.35);border:1px solid var(--crimson);color:var(--crimson-l)}
+.bubble.typing{color:var(--txt2);font-size:11px}
+/* ---------- Report / analysis ---------- */
+.analysis-box{
+  white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:2;
+  user-select:text;-webkit-user-select:text;
+}
+.tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{
+  background:var(--variant);border:1px solid var(--border);color:var(--txt2);
+  border-radius:20px;padding:4px 11px;font-size:11.5px;cursor:pointer;font-family:inherit;font-weight:600;
+}
+.tag:active{background:rgba(229,57,53,.25);color:var(--crimson-l);border-color:var(--crimson)}
+.note-item{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:7px 10px;margin-top:6px;font-size:12px;display:flex;gap:8px;align-items:flex-start}
+.note-item .n-txt{flex:1;user-select:text;-webkit-user-select:text}
+.note-item .n-del{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:13px}
+.cat-badge{font-size:9.5px;padding:1px 7px;border-radius:6px;font-weight:800;flex:0 0 auto}
+.cat-SUSPICIOUS{background:rgba(229,57,53,.2);color:var(--crimson-l)}
+.cat-TALK{background:rgba(38,166,154,.18);color:var(--green)}
+.cat-OPINION{background:rgba(255,213,79,.15);color:var(--gold)}
+.cat-FREE{background:var(--variant);color:var(--txt2)}
+.status-chip{font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:8px;border:1px solid}
+.st-ok{color:var(--green);border-color:rgba(38,166,154,.5);background:rgba(38,166,154,.12)}
+.st-warn{color:var(--yellow);border-color:rgba(255,179,0,.5);background:rgba(255,179,0,.12)}
+/* ---------- Settings sections ---------- */
+.sec-tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.sec-tabs::-webkit-scrollbar{display:none}
+.sec-tab{
+  flex:0 0 auto;background:var(--card2);border:1px solid var(--border);color:var(--txt2);
+  padding:7px 13px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;
+}
+.sec-tab.active{background:rgba(229,57,53,.2);border-color:var(--crimson);color:var(--crimson-l)}
+.game-item{display:flex;align-items:center;gap:8px;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:11px;margin-bottom:8px}
+.game-item.active-game{border-color:var(--gold)}
+.game-item .g-name{flex:1;font-weight:700;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.game-item.active-game .g-name{color:var(--gold)}
+/* ---------- Chart ---------- */
+.chart-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.lg-item{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--txt2)}
+.lg-dot{width:9px;height:9px;border-radius:50%}
+/* ---------- Empty state ---------- */
+.empty{text-align:center;padding:34px 16px;color:var(--txt3)}
+.empty .big{font-size:40px;margin-bottom:8px}
+/* ---------- Misc ---------- */
+.kv{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--txt2)}
+.kv b{color:var(--txt)}
+details.factors-d{margin-top:8px}
+details.factors-d summary{cursor:pointer;font-size:12px;color:var(--purple);font-weight:700;list-style:none}
+details.factors-d summary::-webkit-details-marker{display:none}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-3px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.conflict-item{background:rgba(183,28,28,.14);border:1px solid rgba(229,57,53,.4);border-radius:10px;padding:8px 11px;margin-top:7px;font-size:12px}
+.conflict-item .c-sev{color:var(--crimson-l);font-weight:800;font-size:11px}
+.tactic-item{background:rgba(38,166,154,.09);border:1px solid rgba(38,166,154,.35);border-radius:10px;padding:8px 11px;margin-top:7px;font-size:12px}
+.tactic-item .t-safe{font-size:10px;font-weight:800;padding:1px 8px;border-radius:6px;background:var(--variant);color:var(--green)}
+.speech-block{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:8px;font-size:13px;line-height:2.1;user-select:text;-webkit-user-select:text}
+.speech-block .s-title{color:var(--gold);font-weight:800;font-size:12px;margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <span id="app-title">🕵️ تحلیل‌گر مافیا<span id="stealth-dot"> •</span></span>
+  <span class="stage-chip" id="top-stage">—</span>
+  <button id="topbar-game" onclick="UI.go('settings','games')">انتخاب بازی ▾</button>
+</header>
+
+<main id="main">
+  <section class="tab" id="tab-table"></section>
+  <section class="tab" id="tab-votes"></section>
+  <section class="tab" id="tab-reports"></section>
+  <section class="tab" id="tab-settings"></section>
+</main>
+
+<nav id="bottomnav">
+  <button class="nav-btn" data-nav="table"><span class="ico">🎯</span>میز بازی</button>
+  <button class="nav-btn" data-nav="votes"><span class="ico">🗳️</span>رأی‌گیری</button>
+  <button class="nav-btn" data-nav="reports"><span class="ico">📊</span>گزارش‌ها</button>
+  <button class="nav-btn" data-nav="settings"><span class="ico">⚙️</span>تنظیمات</button>
+</nav>
+
+<div id="snackbar"></div>
+<div id="sheet-backdrop" onclick="UI.closeSheet()"></div>
+<div id="sheet"><div class="grabber"></div><div id="sheet-body"></div></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   تحلیل‌گر مافیا — نسخه وب (تک‌فایل، کاملاً آفلاین)
+   پورت کامل اپ اندروید: الگوریتم شفاف سوءظن، میز دایره‌ای، رأی‌گیری،
+   گزارش‌ها، مربی نطق، حالت مخفی مافیا و تنظیمات AI سازگار با OpenAI.
+   ===================================================================== */
+
+const LS_KEY = 'mafia_analyzer_web_v1';
+const DEFAULT_AI_BASE_URL = 'https://9router-production-e6c9.up.railway.app/v1';
+const STAGE_TITLES = ['معارفه', 'روز ۱', 'روز ۲', 'روز ۳', 'روز ۴'];
+const DEFAULT_WEIGHTS = { manual: 0.35, suspNote: 0.25, spread: 0.15, flip: 0.15, votes: 0.10 };
+const LINE_COLORS = ['#E53935','#FFD54F','#26A69A','#B388FF','#FF7043','#4FC3F7','#F06292','#AED581','#FFB74D','#9575CD','#4DB6AC','#FF8A65'];
+
+function faNum(x){ return String(x).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d]); }
+function stageTitle(i){ return i < STAGE_TITLES.length ? STAGE_TITLES[i] : 'روز ' + faNum(i); }
+function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function nowTs(){ return Date.now(); }
+
+/* ---------- persistence ---------- */
+const store = {
+  load(){ try{ const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; } },
+  save(s){ try{ localStorage.setItem(LS_KEY, JSON.stringify(s)); }catch(e){ /* quota */ } }
+};
+function freshDb(){
+  return { nextId: 1, activeGameId: null, games: [], players: [], targets: [], notes: [], votes: [], manuals: [], secretNotes: [], weights: {}, ai: { baseUrl: DEFAULT_AI_BASE_URL, apiKey: '', model: '', temperature: 0.4 } };
+}
+let db = null;
+function initDb(){ db = store.load() || freshDb(); if(!db.ai) db.ai = freshDb().ai; if(!db.weights) db.weights = {}; }
+function persist(){ store.save(db); }
+function nid(){ return db.nextId++; }
+/* پل امن: toast قبل از بارگذاری UI (در تست‌های headless بی‌خطر است) */
+function toast(msg){ try{ if(window.UI && window.UI.toast) window.UI.toast(msg); }catch(e){ /* noop */ } }
+
+/* ---------- selectors ---------- */
+function activeGame(){ return db.games.find(g => g.id === db.activeGameId) || null; }
+function playersOf(gid){ return db.players.filter(p => p.gameId === gid).sort((a,b) => a.displayOrder - b.displayOrder || a.id - b.id); }
+function targetsOf(gid){ return db.targets.filter(t => t.gameId === gid); }
+function notesOf(gid){ return db.notes.filter(n => n.gameId === gid); }
+function votesOf(gid){ return db.votes.filter(v => v.gameId === gid); }
+function manualsOf(gid){ return db.manuals.filter(m => m.gameId === gid); }
+function weightsOf(gid){ return db.weights[gid] || Object.assign({}, DEFAULT_WEIGHTS); }
+function sortedGames(){ return db.games.slice().sort((a,b) => b.updatedAt - a.updatedAt); }
+
+/* ---------- game ops ---------- */
+function createGame(name, playerNames, opts){
+  opts = opts || {};
+  const valid = playerNames.map(s => (s||'').trim()).filter(Boolean);
+  if(!valid.length) return null;
+  const total = valid.length;
+  const mafiaCount = opts.mafiaCount > 0 ? opts.mafiaCount : Math.max(1, Math.floor(total/3));
+  const indepCount = opts.independentCount > 0 ? opts.independentCount : 0;
+  const citizenCount = opts.citizenCount > 0 ? opts.citizenCount : Math.max(1, total - mafiaCount - indepCount);
+  const gid = nid();
+  db.games.push({
+    id: gid, name: (name||'').trim() || 'بازی جدید مافیا', createdAt: nowTs(), updatedAt: nowTs(),
+    currentStageIndex: 0, maxUnlockedStageIndex: 0,
+    citizenCount, mafiaCount, independentCount: indepCount,
+    ownerId: null, ownerRole: opts.ownerRole || 'CITIZEN'
+  });
+  db.weights[gid] = Object.assign({}, DEFAULT_WEIGHTS);
+  valid.forEach((pn, idx) => {
+    const pid = nid();
+    const isOwner = opts.ownerIndex != null && idx === opts.ownerIndex;
+    const isMate = opts.ownerRole === 'MAFIA' && (opts.mateIndices || []).indexOf(idx) >= 0;
+    db.players.push({
+      id: pid, gameId: gid, name: pn, isEliminated: false, eliminatedStageIndex: null,
+      displayOrder: idx, isOwner: !!isOwner,
+      knownRole: isOwner ? (opts.ownerRole || 'CITIZEN') : (isMate ? 'MAFIA' : null)
+    });
+    if(isOwner) db.games[db.games.length-1].ownerId = pid;
+  });
+  db.activeGameId = gid;
+  persist();
+  return gid;
+}
+
+function createSampleGame(){
+  return createGame('بازی نمونه مافیا', ['قاسم','رضا','مهدی','مهدیار','یسنا','زهرا','فاطی','علی'], {});
+}
+
+function renameGame(gid, name){
+  const g = db.games.find(x => x.id === gid); if(!g) return;
+  name = (name||'').trim(); if(!name) return;
+  g.name = name; g.updatedAt = nowTs(); persist();
+}
+
+function deleteGame(gid){
+  db.games = db.games.filter(g => g.id !== gid);
+  db.players = db.players.filter(p => p.gameId !== gid);
+  db.targets = db.targets.filter(t => t.gameId !== gid);
+  db.notes = db.notes.filter(n => n.gameId !== gid);
+  db.votes = db.votes.filter(v => v.gameId !== gid);
+  db.manuals = db.manuals.filter(m => m.gameId !== gid);
+  db.secretNotes = db.secretNotes.filter(s => s.gameId !== gid);
+  delete db.weights[gid];
+  if(db.activeGameId === gid){
+    const rest = sortedGames();
+    db.activeGameId = rest.length ? rest[0].id : null;
+  }
+  persist();
+}
+
+function duplicateGame(gid){
+  const src = db.games.find(g => g.id === gid); if(!src) return null;
+  const players = playersOf(gid);
+  const idMap = {};
+  const newGid = nid();
+  db.games.push(Object.assign({}, src, { id: newGid, name: src.name + ' (کپی)', createdAt: nowTs(), updatedAt: nowTs(), ownerId: null }));
+  db.weights[newGid] = Object.assign({}, weightsOf(gid));
+  players.forEach(p => {
+    const np = nid(); idMap[p.id] = np;
+    db.players.push(Object.assign({}, p, { id: np, gameId: newGid }));
+  });
+  const ng = db.games[db.games.length-1];
+  if(src.ownerId && idMap[src.ownerId]) ng.ownerId = idMap[src.ownerId];
+  targetsOf(gid).forEach(t => {
+    if(idMap[t.sourceId] != null && idMap[t.targetId] != null)
+      db.targets.push({ id: nid(), gameId: newGid, stageIndex: t.stageIndex, sourceId: idMap[t.sourceId], targetId: idMap[t.targetId] });
+  });
+  notesOf(gid).forEach(n => { if(idMap[n.playerId] != null) db.notes.push(Object.assign({}, n, { id: nid(), gameId: newGid, playerId: idMap[n.playerId] })); });
+  votesOf(gid).forEach(v => { if(idMap[v.voterId] != null) db.votes.push(Object.assign({}, v, { id: nid(), gameId: newGid, voterId: idMap[v.voterId], targetId: v.targetId >= 0 && idMap[v.targetId] != null ? idMap[v.targetId] : -1 })); });
+  manualsOf(gid).forEach(m => { if(idMap[m.playerId] != null) db.manuals.push(Object.assign({}, m, { id: nid(), gameId: newGid, playerId: idMap[m.playerId] })); });
+  db.secretNotes.filter(s => s.gameId === gid).forEach(s => { if(idMap[s.playerId] != null) db.secretNotes.push(Object.assign({}, s, { id: nid(), gameId: newGid, playerId: idMap[s.playerId] })); });
+  db.activeGameId = newGid;
+  persist();
+  return newGid;
+}
+
+function selectGame(gid){
+  db.activeGameId = gid;
+  const g = activeGame();
+  UI.selSource = null; UI.pendingTargets = new Set();
+  UI.reportStage = g ? g.currentStageIndex : 0;
+  persist();
+}
+
+function wipeAll(){
+  db = freshDb(); persist();
+  UI.selSource = null; UI.pendingTargets = new Set(); UI.stealth = false;
+  UI.chat = []; UI.models = [];
+}
+
+/* ---------- player ops ---------- */
+function addPlayer(gid, name){
+  name = (name||'').trim(); if(!name) return null;
+  const list = playersOf(gid);
+  const p = { id: nid(), gameId: gid, name, isEliminated: false, eliminatedStageIndex: null, displayOrder: list.length, isOwner: false, knownRole: null };
+  db.players.push(p); touchGame(gid); persist();
+  return p.id;
+}
+function renamePlayer(pid, name){
+  const p = db.players.find(x => x.id === pid); if(!p) return;
+  name = (name||'').trim(); if(!name) return;
+  p.name = name; touchGame(p.gameId); persist();
+}
+function deletePlayer(pid){
+  const p = db.players.find(x => x.id === pid); if(!p) return;
+  db.players = db.players.filter(x => x.id !== pid);
+  db.targets = db.targets.filter(t => t.sourceId !== pid && t.targetId !== pid);
+  db.notes = db.notes.filter(n => n.playerId !== pid);
+  db.votes = db.votes.filter(v => v.voterId !== pid && v.targetId !== pid);
+  db.manuals = db.manuals.filter(m => m.playerId !== pid);
+  db.secretNotes = db.secretNotes.filter(s => s.playerId !== pid);
+  const g = db.games.find(x => x.id === p.gameId);
+  if(g && g.ownerId === pid){ g.ownerId = null; }
+  touchGame(p.gameId); persist();
+}
+function toggleEliminated(pid){
+  const p = db.players.find(x => x.id === pid); if(!p) return;
+  p.isEliminated = !p.isEliminated;
+  p.eliminatedStageIndex = p.isEliminated ? (stageOfGame(p.gameId)) : null;
+  touchGame(p.gameId); persist();
+}
+function movePlayer(pid, dir){
+  const p = db.players.find(x => x.id === pid); if(!p) return;
+  const list = playersOf(p.gameId);
+  const idx = list.findIndex(x => x.id === pid);
+  const jdx = idx + dir;
+  if(jdx < 0 || jdx >= list.length) return;
+  const a = list[idx], b = list[jdx];
+  const t = a.displayOrder; a.displayOrder = b.displayOrder; b.displayOrder = t;
+  touchGame(p.gameId); persist();
+}
+function setOwnerAndRole(gid, ownerId, role){
+  const g = db.games.find(x => x.id === gid); if(!g) return;
+  g.ownerRole = role; g.ownerId = ownerId;
+  playersOf(gid).forEach(p => {
+    if(p.id === ownerId){ p.isOwner = true; p.knownRole = role; }
+    else if(p.isOwner){ p.isOwner = false; }
+  });
+  if(role !== 'MAFIA'){ playersOf(gid).forEach(p => { if(p.id !== ownerId && p.knownRole === 'MAFIA') p.knownRole = null; }); }
+  touchGame(gid); persist();
+}
+function toggleMate(pid){
+  const p = db.players.find(x => x.id === pid); if(!p || p.isOwner) return;
+  p.knownRole = p.knownRole === 'MAFIA' ? null : 'MAFIA';
+  touchGame(p.gameId); persist();
+}
+function setScenario(gid, c, m, ind){
+  const g = db.games.find(x => x.id === gid); if(!g) return;
+  g.citizenCount = c; g.mafiaCount = m; g.independentCount = ind;
+  touchGame(gid); persist();
+}
+function touchGame(gid){ const g = db.games.find(x => x.id === gid); if(g) g.updatedAt = nowTs(); }
+
+/* ---------- stage ops ---------- */
+function stageOfGame(gid){ const g = db.games.find(x => x.id === gid); return g ? g.currentStageIndex : 0; }
+function setStage(gid, i){
+  const g = db.games.find(x => x.id === gid); if(!g) return false;
+  if(i > g.maxUnlockedStageIndex){ toast('مرحله «' + stageTitle(i) + '» قفل است. لطفاً ابتدا «' + stageTitle(g.currentStageIndex) + '» را به پایان برسانید.'); return false; }
+  g.currentStageIndex = i; g.updatedAt = nowTs(); persist(); return true;
+}
+function advanceStage(gid){
+  const g = db.games.find(x => x.id === gid); if(!g) return;
+  const cur = g.currentStageIndex, nxt = cur + 1;
+  g.currentStageIndex = nxt;
+  g.maxUnlockedStageIndex = Math.max(g.maxUnlockedStageIndex, nxt);
+  g.updatedAt = nowTs(); persist();
+  toast('پرونده «' + stageTitle(cur) + '» بسته شد و «' + stageTitle(nxt) + '» آغاز گردید 🌅');
+}
+
+/* ---------- target ops ---------- */
+function replaceTargets(gid, stage, sourceId, targetIds){
+  db.targets = db.targets.filter(t => !(t.gameId === gid && t.stageIndex === stage && t.sourceId === sourceId));
+  targetIds.forEach(tid => {
+    if(tid !== sourceId) db.targets.push({ id: nid(), gameId: gid, stageIndex: stage, sourceId, targetId: tid });
+  });
+  touchGame(gid); persist();
+}
+
+/* ---------- note ops ---------- */
+function addNote(gid, playerId, stage, category, text){
+  text = (text||'').trim(); if(!text) return null;
+  const n = { id: nid(), gameId: gid, playerId, stageIndex: stage, category, text, ts: nowTs() };
+  db.notes.push(n); touchGame(gid); persist();
+  return n.id;
+}
+function addQuickTag(pid, tag, cat){
+  const p = db.players.find(x => x.id === pid); if(!p) return;
+  const g = db.games.find(x => x.id === p.gameId); if(!g) return;
+  addNote(p.gameId, pid, g.currentStageIndex, cat || 'SUSPICIOUS', tag);
+}
+function deleteNote(id){ db.notes = db.notes.filter(n => n.id !== id); persist(); }
+function addSecretNote(pid, content, sugg){
+  const p = db.players.find(x => x.id === pid); if(!p) return;
+  const g = db.games.find(x => x.id === p.gameId); if(!g) return;
+  content = (content||'').trim(); if(!content) return;
+  db.secretNotes.push({ id: nid(), gameId: p.gameId, playerId: pid, stageIndex: g.currentStageIndex, content, misdirectionSuggestion: sugg || '', ts: nowTs() });
+  persist();
+}
+function deleteSecretNote(id){ db.secretNotes = db.secretNotes.filter(s => s.id !== id); persist(); }
+
+/* ---------- vote ops ---------- */
+function setVote(gid, stage, voterId, targetId){
+  db.votes = db.votes.filter(v => !(v.gameId === gid && v.stageIndex === stage && v.voterId === voterId));
+  if(targetId >= -1) db.votes.push({ id: nid(), gameId: gid, stageIndex: stage, voterId, targetId });
+  touchGame(gid); persist();
+}
+function clearStageVotes(gid, stage){
+  db.votes = db.votes.filter(v => !(v.gameId === gid && v.stageIndex === stage));
+  touchGame(gid); persist();
+}
+
+/* ---------- manual suspicion ops ---------- */
+function setManual(gid, playerId, stage, score){
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  const ex = db.manuals.find(m => m.gameId === gid && m.playerId === playerId && m.stageIndex === stage);
+  if(ex) ex.score = score;
+  else db.manuals.push({ id: nid(), gameId: gid, playerId, stageIndex: stage, score });
+  touchGame(gid); persist();
+}
+
+/* ---------- weights ops ---------- */
+function saveWeights(gid, w){
+  db.weights[gid] = {
+    manual: w.manual, suspNote: w.suspNote, spread: w.spread, flip: w.flip, votes: w.votes
+  };
+  persist();
+}
+
+/* ============================================================
+   Core — پورت خالص موتور تحلیل (بدون وابستگی به UI)
+   ============================================================ */
+const Core = (function(){
+
+function r(x){ return Math.round(x); }
+function clamp(x){ return Math.max(0, Math.min(100, x)); }
+function byId(list, id){ return list.find(x => x.id === id) || null; }
+
+/* ---------- موتور محاسبه سوءظن (پورت دقیق SuspicionCalculator) ---------- */
+function analyzePlayer(gid, playerId, currentStage){
+  const players = playersOf(gid);
+  const player = byId(players, playerId);
+  if(!player) return null;
+  const playerMap = {}; players.forEach(p => { playerMap[p.id] = p; });
+  const w = weightsOf(gid);
+
+  const allTargets = targetsOf(gid), allNotes = notesOf(gid), allVotes = votesOf(gid), allManuals = manualsOf(gid);
+
+  const targetsUpToNow = allTargets.filter(t => t.stageIndex <= currentStage);
+  const notesUpToNow = allNotes.filter(n => n.stageIndex <= currentStage);
+  const votesUpToNow = allVotes.filter(v => v.stageIndex <= currentStage);
+  const manualUpToNow = allManuals.filter(m => m.stageIndex <= currentStage);
+
+  const myTargets = targetsUpToNow.filter(t => t.sourceId === player.id);
+  const targetsReceived = targetsUpToNow.filter(t => t.targetId === player.id);
+  const myNotes = notesUpToNow.filter(n => n.playerId === player.id);
+  const myVotes = votesUpToNow.filter(v => v.voterId === player.id);
+  const votesReceived = votesUpToNow.filter(v => v.targetId === player.id);
+
+  const suspiciousNotes = myNotes.filter(n => n.category === 'SUSPICIOUS');
+  const talkNotes = myNotes.filter(n => n.category === 'TALK');
+  const opinionNotes = myNotes.filter(n => n.category === 'OPINION');
+
+  let currentManual = 50;
+  const mCur = manualUpToNow.find(m => m.playerId === player.id && m.stageIndex === currentStage);
+  if(mCur) currentManual = mCur.score;
+  else {
+    const mine = manualUpToNow.filter(m => m.playerId === player.id);
+    if(mine.length){ let best = mine[0]; mine.forEach(m => { if(m.stageIndex > best.stageIndex) best = m; }); currentManual = best.score; }
+  }
+
+  const pos = [], neg = [];
+
+  // ۱. امتیاز دستی کاربر
+  const manualContribution = r((currentManual - 50) * w.manual * 1.5);
+  if(currentManual > 50){
+    pos.push({ title: 'نظر شهودی کاربر', points: manualContribution, description: 'امتیاز دستی ثبت‌شده: ' + faNum(currentManual) + ' از ۱۰۰ (سوءظن شخصی کاربر)', isSuspicious: true });
+  } else if(currentManual < 50){
+    neg.push({ title: 'اعتماد شخصی کاربر', points: manualContribution, description: 'امتیاز دستی ثبت‌شده: ' + faNum(currentManual) + ' از ۱۰۰ (دید مثبت یا شهروندی کاربر)', isSuspicious: false });
+  }
+
+  // ۲. یادداشت‌های رفتار مشکوک + کلیدواژه‌ها
+  if(suspiciousNotes.length){
+    const notePts = Math.min(30, r(suspiciousNotes.length * 10 * w.suspNote / 0.25));
+    pos.push({ title: 'رفتارهای مشکوک ثبت‌شده', points: notePts, description: faNum(suspiciousNotes.length) + ' مورد یادداشت رفتار مشکوک در سوابق', isSuspicious: true });
+    const texts = suspiciousNotes.map(n => n.text);
+    const has = kw => texts.some(t => t.indexOf(kw) >= 0);
+    if(has('تناقض')) pos.push({ title: 'تناقض‌گویی در بیانات', points: 10, description: 'ثبت تناقض در صحبت‌ها یا استدلال‌های بازیکن', isSuspicious: true });
+    if(has('تغییر موضع')) pos.push({ title: 'تغییر موضع ناگهانی / بی‌دلیل', points: 8, description: 'چرخش نظر بدون ارائه فکت یا استدلال مشخص', isSuspicious: true });
+    if(has('واکنش تدافعی') || has('دفاع بسیار عصبی')) pos.push({ title: 'واکنش تدافعی افراطی', points: 8, description: 'پرخاشگری یا دفاع غیرعادی در برابر اتهام کوچک', isSuspicious: true });
+    if(has('سکوت') || has('کم‌کاری')) pos.push({ title: 'سکوت و عدم مشارکت فعال', points: 7, description: 'انفعال در جریان بازی و پرهیز از اثرگذاری', isSuspicious: true });
+    if(has('استرس') || has('تنش')) pos.push({ title: 'تنش و اضطراب محسوس', points: 6, description: 'نشانه‌های رفتاری استرس و فشار روانی بالا', isSuspicious: true });
+  } else {
+    neg.push({ title: 'عدم ثبت رفتار مشکوک', points: -5, description: 'هیچ رفتار مشکوکی برای این بازیکن ثبت نشده است', isSuspicious: false });
+  }
+
+  // ادعای نقش کلیدی شهروندی
+  if(talkNotes.some(n => n.text.indexOf('ادعای کارآگاه') >= 0 || n.text.indexOf('ادعای دکتر') >= 0)){
+    neg.push({ title: 'ادعای نقش کلیدی شهروندی', points: -6, description: 'ادعای نقش‌داری (کارآگاه یا دکتر) در صحبت‌ها', isSuspicious: false });
+  }
+
+  // ۳. تحلیل تارگت‌ها: نوسان (flip) و پراکندگی
+  const uniqueSet = {}; myTargets.forEach(t => { uniqueSet[t.targetId] = 1; });
+  const uniqueTargets = Object.keys(uniqueSet);
+  const targetsByStage = {};
+  for(let s = 0; s <= currentStage; s++){
+    const set = {}; myTargets.filter(t => t.stageIndex === s).forEach(t => { set[t.targetId] = 1; });
+    targetsByStage[s] = set;
+  }
+  let targetFlips = 0;
+  for(let s = 1; s <= currentStage; s++){
+    const prev = targetsByStage[s-1], curr = targetsByStage[s];
+    const prevKeys = Object.keys(prev), currKeys = Object.keys(curr);
+    if(prevKeys.length && currKeys.length){
+      const dropped = prevKeys.filter(k => !(k in curr));
+      const added = currKeys.filter(k => !(k in prev));
+      if(dropped.length && added.length) targetFlips += dropped.length;
+    }
+  }
+  if(targetFlips > 0){
+    const flipPts = Math.min(25, r(targetFlips * 8 * w.flip / 0.15));
+    pos.push({ title: 'نوسان و تغییر مسیر تارگت‌ها', points: flipPts, description: faNum(targetFlips) + ' مورد تغییر و چرخش ناگهانی در اهداف تارگت‌ها بین روزها', isSuspicious: true });
+  }
+  if(myTargets.length >= 4 && uniqueTargets.length >= 4){
+    pos.push({ title: 'تارگت‌های پراکنده و پرتعداد', points: r(10 * w.spread / 0.15), description: faNum(myTargets.length) + ' تارگت به ' + faNum(uniqueTargets.length) + ' بازیکن مختلف (پخش کردن اتهامات)', isSuspicious: true });
+  } else if(myTargets.length >= 3 && uniqueTargets.length <= 2){
+    neg.push({ title: 'ثبات در تارگت‌ها', points: -8, description: 'تارگت‌های متمرکز و مداوم روی افراد مشخص (' + faNum(uniqueTargets.length) + ' نفر)', isSuspicious: false });
+  }
+
+  // ۴. تارگت دریافتی در مرحله جاری
+  const receivedNow = targetsReceived.filter(t => t.stageIndex === currentStage);
+  if(receivedNow.length >= 3){
+    pos.push({ title: 'کانون توجه و اتهام میز', points: 14, description: faNum(receivedNow.length) + ' بازیکن در این مرحله به او تارگت زده‌اند', isSuspicious: true });
+  } else if(receivedNow.length === 1 || receivedNow.length === 2){
+    pos.push({ title: 'دریافت تارگت در مرحله جاری', points: 6 * receivedNow.length, description: faNum(receivedNow.length) + ' تارگت دریافتی در این مرحله', isSuspicious: true });
+  } else if(receivedNow.length === 0 && currentStage > 0){
+    neg.push({ title: 'عدم دریافت تارگت در مرحله', points: -6, description: 'هیچ بازیکنی در این مرحله به او تارگت نزده است', isSuspicious: false });
+  }
+
+  // ۵. تقابل مستقیم دوطرفه
+  const curMySet = targetsByStage[currentStage];
+  const opponentsSet = {}; receivedNow.forEach(t => { opponentsSet[t.sourceId] = 1; });
+  const clashes = Object.keys(curMySet).filter(k => k in opponentsSet);
+  if(clashes.length){
+    const names = clashes.map(k => playerMap[k] ? playerMap[k].name : null).filter(Boolean).join('، ');
+    pos.push({ title: 'تقابل مستقیم و دوطرفه', points: 8, description: 'تارگت متقابل با: ' + names, isSuspicious: true });
+  }
+
+  // ۶. الگوی رأی‌ها
+  const votesRecvNow = votesReceived.filter(v => v.stageIndex === currentStage);
+  if(votesRecvNow.length){
+    pos.push({ title: 'رأی خروج دریافتی', points: Math.min(30, r(votesRecvNow.length * 10 * w.votes / 0.10)), description: faNum(votesRecvNow.length) + ' رأی برای خروج از بازی در این مرحله دریافت کرده', isSuspicious: true });
+  }
+  const myVotesByStage = [];
+  for(let s = 1; s <= currentStage; s++){
+    const v = myVotes.find(x => x.stageIndex === s);
+    if(v) myVotesByStage.push({ s: s, t: v.targetId });
+  }
+  if(myVotesByStage.length >= 2){
+    const uniq = {}; myVotesByStage.forEach(x => { if(x.t >= 0) uniq[x.t] = 1; });
+    if(Object.keys(uniq).length >= 2){
+      pos.push({ title: 'تغییر رأی بین روزها', points: 6, description: 'رأی خروج را بین روزهای مختلف تغییر داده است', isSuspicious: true });
+    }
+  }
+
+  // فشار روی حذف‌شده‌ها
+  const eliminatedPlayers = players.filter(p => p.isEliminated && p.id !== player.id);
+  if(eliminatedPlayers.length){
+    const targetedEliminated = myTargets.filter(t => eliminatedPlayers.some(e => e.id === t.targetId));
+    if(targetedEliminated.length){
+      pos.push({ title: 'فشار روی بازیکنان حذف‌شده', points: 7, description: 'تارگت زدن به ' + faNum(targetedEliminated.length) + ' بازیکنی که از بازی حذف شدند (احتمال موج‌سواری)', isSuspicious: true });
+    }
+  }
+
+  // یار مافیا / مالک / حذف‌شده
+  if(player.knownRole === 'MAFIA' && !player.isOwner){
+    pos.push({ title: 'یار مافیا (تأیید کاربر)', points: 35, description: 'این بازیکن به عنوان هم‌تیمی مافیای شما تعیین شده است', isSuspicious: true });
+  }
+  if(player.isOwner){
+    const roleFa = player.knownRole === 'MAFIA' ? 'مافیا 🗡️' : player.knownRole === 'INDEPENDENT' ? 'مستقل 🎭' : 'شهروند 🛡️';
+    neg.push({ title: 'مالک بازی (شما)', points: 0, description: 'نقش شما: ' + roleFa, isSuspicious: false });
+  }
+  if(player.isEliminated){
+    neg.push({ title: 'کشته / حذف‌شده از بازی', points: 0, description: 'این بازیکن از بازی خارج شده و در فازهای بعدی صامت است', isSuspicious: false });
+  }
+
+  // جمع‌بندی
+  const totalPos = pos.reduce((a, f) => a + f.points, 0);
+  const totalNeg = neg.reduce((a, f) => a + f.points, 0);
+  const totalScore = clamp(50 + totalPos + totalNeg);
+
+  let statusLabel;
+  if(player.isEliminated) statusLabel = '💀 حذف‌شده از بازی';
+  else if(player.isOwner){
+    const roleFa = player.knownRole === 'MAFIA' ? 'مافیا 🗡️' : player.knownRole === 'INDEPENDENT' ? 'مستقل 🎭' : 'شهروند 🛡️';
+    statusLabel = '👑 شما (' + roleFa + ')';
+  }
+  else if(player.knownRole === 'MAFIA') statusLabel = '🗡️ یار مافیا (تیم شما)';
+  else if(totalScore <= 25) statusLabel = 'کاملاً کم‌خطر / شهروند محتمل';
+  else if(totalScore <= 45) statusLabel = 'کم‌مشکوک / نسبتاً سفید';
+  else if(totalScore <= 65) statusLabel = 'متوسط / نیازمند بررسی بیشتر';
+  else if(totalScore <= 80) statusLabel = 'مشکوک / پرریسک';
+  else statusLabel = 'بسیار مشکوک / کانون سوءظن';
+
+  // روند تاریخی مراحل
+  const stageTrendScores = [];
+  for(let s = 0; s <= currentStage; s++) stageTrendScores.push({ stage: s, score: histScore(gid, player, s, w) });
+
+  return {
+    playerId: player.id, playerName: player.name, stageIndex: currentStage,
+    totalScore, statusLabel,
+    positiveFactors: pos, negativeFactors: neg,
+    stageTrendScores,
+    totalTargetsMade: myTargets.length,
+    uniqueTargetsCount: uniqueTargets.length,
+    targetsReceivedCount: targetsReceived.length,
+    targetFlipsCount: targetFlips,
+    votesCastCount: myVotes.length,
+    votesReceivedCount: votesReceived.length,
+    suspiciousNotesCount: suspiciousNotes.length,
+    talkNotesCount: talkNotes.length,
+    opinionNotesCount: opinionNotes.length,
+    manualScore: currentManual,
+    isEliminated: player.isEliminated, isOwner: player.isOwner, knownRole: player.knownRole
+  };
+}
+
+function histScore(gid, player, targetStage, w){
+  const myT = targetsOf(gid).filter(t => t.stageIndex <= targetStage && t.sourceId === player.id);
+  const recvT = targetsOf(gid).filter(t => t.stageIndex === targetStage && t.targetId === player.id);
+  const myN = notesOf(gid).filter(n => n.stageIndex <= targetStage && n.playerId === player.id);
+  const recvV = votesOf(gid).filter(v => v.stageIndex === targetStage && v.targetId === player.id);
+  const mRow = manualsOf(gid).find(m => m.stageIndex === targetStage && m.playerId === player.id);
+  const manual = mRow ? mRow.score : 50;
+  let score = 50;
+  score += r((manual - 50) * w.manual * 1.5);
+  const susp = myN.filter(n => n.category === 'SUSPICIOUS');
+  if(susp.length) score += Math.min(30, r(susp.length * 12 * w.suspNote / 0.25));
+  else score -= 5;
+  if(recvT.length >= 2) score += 10;
+  if(recvV.length) score += recvV.length * 10;
+  return clamp(score);
+}
+
+function analyzeGame(gid, stage){
+  if(stage == null){ const g = db.games.find(x => x.id === gid); stage = g ? g.currentStageIndex : 0; }
+  return playersOf(gid).map(p => analyzePlayer(gid, p.id, stage)).filter(Boolean)
+    .sort((a, b) => b.totalScore - a.totalScore);
+}
+
+/* ---------- راهنمای سخنرانی (پورت SpeechCoachEngine) ---------- */
+function speechGuide(gid, stage){
+  const g = db.games.find(x => x.id === gid); if(!g) return null;
+  if(stage == null) stage = g.currentStageIndex;
+  const players = playersOf(gid);
+  const scores = analyzeGame(gid, stage);
+  const allTargets = targetsOf(gid), allNotes = notesOf(gid);
+  const isDayOne = stage <= 1;
+  const ownerPlayer = players.find(p => p.isOwner || (g.ownerId != null && p.id === g.ownerId)) || null;
+  const ownerName = ownerPlayer ? ownerPlayer.name : 'من';
+  const ownerRole = g.ownerRole || (ownerPlayer ? ownerPlayer.knownRole : null) || 'CITIZEN';
+  const living = players.filter(p => !p.isEliminated);
+  const eliminated = players.filter(p => p.isEliminated);
+  const currentStageTargets = allTargets.filter(t => t.stageIndex === stage);
+  const mafiaTeammates = players.filter(p => p.knownRole === 'MAFIA' && (!ownerPlayer || p.id !== ownerPlayer.id));
+  const notesAboutLiving = allNotes.filter(n => living.some(p => p.id === n.playerId));
+  const topSuspects = scores.filter(s => living.some(p => p.id === s.playerId) && (!ownerPlayer || s.playerId !== ownerPlayer.id))
+    .sort((a, b) => b.totalScore - a.totalScore).slice(0, 3);
+
+  // ۱. قلاب شروع
+  let openingHook;
+  if(ownerRole === 'MAFIA'){
+    if(isDayOne) openingHook = '«سلام به همگی، من نمی‌خوام الکی وقت بازی رو بگیرم. فقط دقت کنید به بازی؛ الان روز اوله و تارگت‌های سفت زدن یعنی خودزنی. بذارید ببینیم کی با تارگت‌های چرت داره جو رو متشنج می‌کنه...»';
+    else {
+      const deadName = eliminated.length ? eliminated[eliminated.length-1].name : 'کشته شب';
+      openingHook = '«سلام رفقا؛ از صبح که ' + deadName + ' از بازی رفت، خیلیا دستپاچه شدن. من از دیشب تارگت‌ها رو رصد کردم، یه عده دارن عمداً جهت بازی رو کج می‌کنن تا ما رو از خط اصلی منحرف کنن. الان وقتشه حواس‌مون جمع باشه و بازیچه نشیم!»';
+    }
+  } else if(ownerRole === 'INDEPENDENT'){
+    openingHook = '«سلام رفقا؛ من نه با چپم نه با راست، فقط دارم از بیرون بازی رو تماشا می‌کنم و تناقض‌ها داره جیغ می‌زنه! بازی دست دو قطبی‌های الکی افتاده، بذارید دودوتا چهارتا کنیم ببینیم کی این وسط داره سود می‌بره...»';
+  } else {
+    if(isDayOne) openingHook = '«سلام رفقا؛ من به عنوان یک شهروند آگاه دارم با گوش باز بازی رو می‌شنوم. از همین اول کار بگم: تارگت‌های بدون دلیل و بازی‌خونی‌های تخیلی پذیرفته نیست! هر کی ادعا داره باید فکت بیاره وسط میز.»';
+    else {
+      const deadName = eliminated.length ? eliminated[eliminated.length-1].name : 'کشته دیشب';
+      openingHook = '«سلام دوستان؛ دیشب ' + deadName + ' رفت بیرون و این یعنی زنگ خطره. نگاه کنید کی دیروز بیشترین فشار رو روی ' + deadName + ' گذاشت و امروز داره با خیال راحت سوت می‌زنه و تارگت عوض می‌کنه؟ فکت‌ها دارن باهامون حرف می‌زنن!»';
+    }
+  }
+
+  // ۲. تحلیل الگوی تارگت
+  const flippers = scores.filter(s => s.targetFlipsCount > 0);
+  let targetPatternText;
+  if(flippers.length){
+    const fNames = flippers.slice(0, 2).map(s => '«' + s.playerName + '»').join(' و ');
+    targetPatternText = '🔄 چرخش و نوسان تارگت: ' + fNames + ' موضع خودشون رو عوض کردن. این نوسان بی‌منطق، از بارزترین نشانه‌های موج‌سواریه؛ چون شهروند معمولاً تارگتش پیوستگی منطقی داره نه اینکه مدام بچرخه.';
+  } else if(currentStageTargets.length){
+    let most = null, mostCount = -1;
+    living.forEach(p => { const c = currentStageTargets.filter(t => t.targetId === p.id).length; if(c > mostCount){ mostCount = c; most = p; } });
+    if(most && mostCount >= 2) targetPatternText = '🎯 تمرکز تارگت‌ها روی «' + most.name + '» (' + faNum(mostCount) + ' تارگت همزمان). باید دقت کنی آیا این یک پوش سازماندهی‌شده است یا اتهام واقعی؟';
+    else targetPatternText = '🎯 تارگت‌ها پراکنده است و بازیکن‌ها دارن دست به عصا حرکت می‌کنن تا واکنش بقیه رو بسنجن.';
+  } else {
+    targetPatternText = '🎯 هنوز الگوی تارگت سنگینی شکل نگرفته؛ زمان طلاییه که تو با استدلال‌های خودت فضا رو دست بگیری.';
+  }
+
+  // ۳. تحلیل یادداشت‌های کاربر
+  const userNotesInsights = [];
+  if(notesAboutLiving.length){
+    const suspNotes = notesAboutLiving.filter(n => n.category === 'SUSPICIOUS');
+    const talkNts = notesAboutLiving.filter(n => n.category === 'TALK');
+    const otherNts = notesAboutLiving.filter(n => n.category !== 'SUSPICIOUS' && n.category !== 'TALK');
+    suspNotes.slice(0, 3).forEach(n => {
+      const p = byId(players, n.playerId); const pName = p ? p.name : 'بازیکن';
+      userNotesInsights.push('📌 یادداشت سوءظن تو درباره «' + pName + '»: نوشتی «' + n.text + '». تو نطق خودمانی بگو: «من رفتار ' + pName + ' رو دقیق زیر نظر داشتم؛ این حرکتش اصلاً توجیه شهروندی نداشت!»');
+    });
+    talkNts.slice(0, 2).forEach(n => {
+      const p = byId(players, n.playerId); const pName = p ? p.name : 'بازیکن';
+      userNotesInsights.push('🗣️ از صحبت‌های ثبت‌شده «' + pName + '»: ثبت کردی «' + n.text + '». می‌تونی تناقض این حرفش با ادعای امروزش رو توی صورتش بکوبی.');
+    });
+    if(!userNotesInsights.length && otherNts.length){
+      const n = otherNts[0]; const p = byId(players, n.playerId); const pName = p ? p.name : 'بازیکن';
+      userNotesInsights.push('📝 یادداشت تو درباره «' + pName + '»: «' + n.text + '» - به عنوان شاهد زنده ازش استفاده کن.');
+    }
+  } else {
+    userNotesInsights.push('💡 شما هنوز یادداشت متنی خاصی برای بازیکن‌های زنده ثبت نکرده‌اید. با دکمه «یادداشت» سوتی‌ها، تناقض‌ها و جملات کلیدی رو بنویسید تا مستقیماً به نطق شما تزریق شوند.');
+  }
+
+  // ۴. توصیه درباره مظنونین
+  const suspectsAdvice = topSuspects.map(s => {
+    const isTeammate = mafiaTeammates.some(m => m.id === s.playerId);
+    let tip;
+    if(ownerRole === 'MAFIA' && isTeammate) tip = '«این یار مافیای توئه! حواست باشه خرابش نکنی. اگر خواستی سوءظن بقیه رو از روش برداری، بگو: فلانی رو الکی دارن بزرگ می‌کنن، اون داره گیج بازی درمیاره ولی مافیا نیست، چشم‌تون رو روی مظنون اصلی نبندید!»';
+    else if(ownerRole === 'MAFIA') tip = '«این شهروند امتیاز سوءظنش ' + faNum(s.totalScore) + '٪ شده! بهترین طعمه برای پوش کردنه. بگو: فلانی تمام تارگتاش چرخشی و بدون فکته، چرا هیچ‌کس به این تناقض‌ها توجه نمی‌کنه؟»';
+    else if(ownerRole === 'INDEPENDENT') tip = '«امتیاز سوءظن ' + faNum(s.totalScore) + '٪. این بازیکن زیر تیغه. آروم آتش جنگ رو بین اون و طرف مقابل تندتر کن بدون اینکه مسئولیت بیرون رفتنش بیفته گردن تو.»';
+    else tip = '«امتیاز سوءظن ' + faNum(s.totalScore) + '٪ (بالاترین سطح خطر). به شهر بگو: ببینید «' + s.playerName + '» هم تارگت‌هاش متناقضه هم رفتار دفاعیش غیرعادی بود. من رسماً به عنوان تارگت اول شهروندی روم رو به ' + s.playerName + ' می‌کنم!»';
+    return { playerId: s.playerId, playerName: s.playerName, suspicionScore: s.totalScore, isTeammate, colloquialArgument: tip };
+  });
+
+  // ۵. راهنمای یاران مافیا
+  let mafiaGuide = null;
+  if(ownerRole === 'MAFIA'){
+    const names = mafiaTeammates.map(m => m.name);
+    const safeTargets = living.filter(p => (!ownerPlayer || p.id !== ownerPlayer.id) && !mafiaTeammates.some(m => m.id === p.id)).slice(0, 2).map(p => p.name);
+    const coverAdvice = names.length
+      ? 'هم‌تیمی‌های شما: ' + names.join('، ') + '. به هیچ عنوان تارگت هماهنگ و تابلودار نزنید. یک نفر از شما باید کاملاً شهروند موجه بازی کند. به یارهایتان تارگت‌های سبک و بدون تعقیب بزنید تا تارگت فیک (زرگری) حساب شود ولی از بازی بیرون نروند!'
+      : '⚠️ شما نقش مافیا دارید اما هنوز یاران مافیای خود را مشخص نکرده‌اید! لطفاً از بخش بالای همین صفحه یاران مافیای خود را تعیین کنید تا سناریوی دفاع و تخریب دقیق‌تر شود.';
+    mafiaGuide = { teammatesNames: names, tacticalCoveringAdvice: coverAdvice, safeTargetsToPush: safeTargets };
+  }
+
+  // ۶. استراتژی نقش
+  let roleStrategy;
+  if(ownerRole === 'MAFIA') roleStrategy = [
+    '🗡️ حفظ خونسردی: نگذار صدات بلرزه یا عصبی بشی. شهروندها دنبال کسی می‌گردن که تدافعی واکنش نشون بده.',
+    '🗡️ سوار شدن روی موج اتهامات: هر شهروندی که سوتی داده یا شک برانگیزه رو آروم با فکت‌های منطقی زیر ضرب ببر.',
+    '🗡️ کاور یاران مافیا: اگر به یارت فشار اومد، به جای دفاع کورکورانه بگو «موضوع فلانی مبهمه، اول به پرونده شفاف‌تر برسیم».',
+    '🗡️ پرهیز از رأی تابلوی اول: صبر کن شهروندها رأی‌ها رو بشکنن، بعد با موج همراه شو.'
+  ];
+  else if(ownerRole === 'INDEPENDENT') roleStrategy = [
+    '🎭 نقش دلسوز بازی: خودت رو به عنوان متفکری که فقط دنبال حقیقته نشون بده.',
+    '🎭 انداختن دو قطبی: شهروندها و مافیاها رو روبروی هم بچین تا همدیگه رو پاره کنند و تو تا روز آخر امن بمونی.',
+    '🎭 رأی‌های سرنوشت‌ساز: نگذار یک تیم خیلی زود برنده بشه؛ بازی رو در تعادل نگه دار.'
+  ];
+  else roleStrategy = [
+    '🛡️ مطالبه فکت و منطق: از کسایی که روی هوا تارگت می‌زنن بپرس «دقیقاً رو چه فکتی این حرفو می‌زنی؟».',
+    '🛡️ رصد چرخش‌ها: کسانی که بعد از کشته شدن شهروندها تارگت‌شون رو ۱۸۰ درجه چرخوندن زیر ذره‌بین ببر.',
+    '🛡️ اتحاد شهروندی: شهروندای سفید رو به هم وصل کن و نگذار مافیا بین‌تون تفرقه بندازه.',
+    '🛡️ شجاعت در دفاع: اگر بهت تارگت خورد، با خنده و فکت استدلال کن، عصبانیت فقط به نفع مافیاست.'
+  ];
+
+  // ۷. نکات کلیدی
+  const keyPoints = [openingHook];
+  if(topSuspects.length){
+    const mainTarget = topSuspects[0];
+    if(ownerRole === 'MAFIA' && mafiaTeammates.some(m => m.id === mainTarget.playerId)){
+      const alt = topSuspects[1] || topSuspects[0];
+      keyPoints.push('🎯 نوک پیکان رو بچرخون سمت «' + alt.playerName + '»: بگو این همه شواهد و رفتارهای مشکوک رو ول کردید چسبیدید به حواشی؟');
+    } else {
+      keyPoints.push('🎯 تارگت اصلی من «' + mainTarget.playerName + '» هست (سوءظن ' + faNum(mainTarget.totalScore) + '٪): به خاطر تغییر موضع و عدم ارائه استدلال منطقی.');
+    }
+  }
+  if(userNotesInsights.length) keyPoints.push('📋 استناد محکم به یادداشت‌ها: فکت‌های ثبت‌شده‌ات رو شمرده شمرده بگو تا حس کنند تسلط کامل به تمام حرف‌ها داری.');
+  if(eliminated.length) keyPoints.push('💀 استناد به کشته‌های بازی (' + eliminated.map(p => p.name).join('، ') + '): یادآوری کن که چطور بازی به این نقطه رسید و چه کسانی اونارو قربانی کردن.');
+
+  // ۸. متن کامل نطق
+  const fullSpeech = buildColloquialSpeech(ownerRole, isDayOne, topSuspects, mafiaTeammates, notesAboutLiving, eliminated, players);
+
+  return {
+    ownerName, ownerRole, currentStageTitle: stageTitle(stage), isDayOne,
+    openingHook, keyTalkingPoints: keyPoints, targetPatternAnalysis: targetPatternText,
+    topSuspectsAdvice: suspectsAdvice, userNotesInsights,
+    roleSpecificStrategy: roleStrategy, mafiaTeammatesInfo: mafiaGuide,
+    fullColloquialSpeechText: fullSpeech
+  };
+}
+
+function buildColloquialSpeech(ownerRole, isDayOne, topSuspects, mafiaTeammates, userNotes, eliminated, players){
+  const L = [];
+  L.push('سلام به همگی رفقا، وقت صحبت من کمه پس رک و پوست‌کنده می‌گم:');
+  L.push('');
+  if(ownerRole === 'MAFIA'){
+    if(isDayOne) L.push('ببینید بچه‌ها، الان روز اوله و هیچ فکت قطعی روی میز نیست. ولی من دارم می‌بینم یه سری از دوستان جوری با هیجان و تند تارگت می‌زنن انگار شب از نقشه همه باخبر بودن! این رفتار اصلاً شهروندی نیست. شهروند واقعی صبر می‌کنه، گوش میده، بعد استدلال میاره.');
+    else {
+      const lastDead = eliminated.length ? eliminated[eliminated.length-1].name : 'کشته شب';
+      L.push('بچه‌ها خوب گوش کنید؛ از وقتی «' + lastDead + '» از بازی رفت، بازی داره از مسیرش منحرف می‌شه. یه عده نشستن و دارن ما رو هدایت می‌کنن سمت دعواهای زرگری و بی‌فایده، در حالی که مافیای اصلی خیلی شیک و ساکت نشسته تماشا می‌کنه.');
+    }
+    const targetPlayer = topSuspects.find(s => !mafiaTeammates.some(m => m.id === s.playerId)) || null;
+    if(targetPlayer){
+      L.push('');
+      L.push('من مشخصاً روی «' + targetPlayer.playerName + '» حرف دارم. چرا؟ چون صحبت‌هاش ثبات نداره. دیروز یه چیز می‌گفت، امروز کاملاً جهتش عوض شده! وقتی بهش تارگت می‌خوره دفاع عصبی می‌کنه، ولی خودش بدون فکت به بقیه انگ می‌زنه. به نظرم تارگت اول و آخر امروز باید ایشون باشه.');
+      const relNote = userNotes.find(n => n.playerId === targetPlayer.playerId);
+      if(relNote){ L.push(''); L.push('من حتی توی صحبت‌های قبلیش یادداشت کردم: «' + relNote.text + '». آخه مگه می‌شه یه شهروند این‌طوری با منطق خودش دربیفته؟'); }
+    }
+    if(mafiaTeammates.length){
+      L.push('');
+      L.push('در مورد «' + mafiaTeammates.map(m => m.name).join(' و ') + '» هم به نظرم الکی بحث رو کش ندید. بازی اونا مشخصه و تارگت زدن بهشون فقط آب به آسیاب مافیای واقعی ریختنه!');
+    }
+    L.push('');
+    L.push('خلاصه اینکه رفقا، موج‌سواری نکنید، پشت دست من بازی کنید تا امروز دست مافیا از بازی کوتاه بشه!');
+  } else if(ownerRole === 'INDEPENDENT'){
+    L.push('من بازی رو دارم بدون تعصب نگاه می‌کنم. الان دو قطبی شکل گرفته که هر دو طرف دارن اشتباه می‌زنن. اگر شهروندید چرا انقدر راحت بازیچه می‌شید؟');
+    if(topSuspects.length) L.push('نگاه کنید به حرکات «' + topSuspects[0].playerName + '». داد می‌زنه که این بازی طبیعی نیست. نه فکت داره نه منطق، فقط داره صداشو می‌بره بالا که ضعف استدلالش رو بپوشونه.');
+    L.push('پیشنهاد من اینه که آرامش‌تون رو حفظ کنید و اجازه ندید کسی با بازی احساسی هدایت‌تون کنه.');
+  } else {
+    if(isDayOne) L.push('من به عنوان یک شهروند پیگیر و با دقت، دارم خط و ربط صحبت‌ها رو ثبت می‌کنم. بچه‌ها، بازی معارفه تموم شد، الان وقت حساب‌کشیه. هر کسی که بدون فکت بخواد به دیگران اتهام بزنه، از نظر من اولین مظنون مافیاست!');
+    else {
+      const lastDead = eliminated.length ? eliminated[eliminated.length-1].name : 'کشته دیشب';
+      L.push('شهدا و کشته‌های ما چرا رفتن بیرون؟ چون «' + lastDead + '» شهروند موجه بود. حالا نگاه کنید کی بود که مدام به ' + lastDead + ' حمله می‌کرد و امروز انگار نه انگار؟');
+    }
+    if(topSuspects.length){
+      const s1 = topSuspects[0];
+      L.push('');
+      L.push('تارگت من شفاف روی «' + s1.playerName + '» هست. دلایلش هم روشنه: اولاً نوسان شدید در تارگت‌ها؛ ثانیاً فرافکنی وقتی که ازش توضیح خواستیم.');
+      const note = userNotes.find(n => n.playerId === s1.playerId);
+      if(note) L.push('من یادداشت کردم که در فاز قبلی دقیقاً گفت: «' + note.text + '». این تناقض آشکار چطور قابل توجیهه؟');
+    }
+    if(topSuspects.length >= 2) L.push('نفر دوم هم «' + topSuspects[1].playerName + '» است که داره با احتیاط بیش از حد بازی می‌کنه تا توی هیچ چالشی نیفته. شهروند واقعی ترسی از شفاف بودن نداره.');
+    L.push('');
+    L.push('شهروندهای عزیز، متحد بمونید، تارگت‌های بدون دلیل رو هوا نکنید و بیاید امروز روی تارگت‌های منطقی متمرکز بشیم. ممنون از وقتتون.');
+  }
+  return L.join('\n');
+}
+
+/* ---------- تحلیل استلث / گمراه‌سازی (پورت StealthMisdirectionEngine) ---------- */
+function stealthAnalysis(gid, stage){
+  const g = db.games.find(x => x.id === gid); if(!g) return null;
+  if(stage == null) stage = g.currentStageIndex;
+  const players = playersOf(gid);
+  const scores = analyzeGame(gid, stage);
+  const scoreMap = {}; scores.forEach(s => { scoreMap[s.playerId] = s; });
+  const alive = players.filter(p => !p.isEliminated);
+  const seatMap = {}; players.forEach((p, i) => { seatMap[p.id] = i + 1; });
+  const targetsInStage = targetsOf(gid).filter(t => t.stageIndex <= stage);
+  const conflicts = [];
+  for(let i = 0; i < alive.length; i++){
+    for(let j = i + 1; j < alive.length; j++){
+      const p1 = alive[i], p2 = alive[j];
+      const p1t2 = targetsInStage.some(t => t.sourceId === p1.id && t.targetId === p2.id);
+      const p2t1 = targetsInStage.some(t => t.sourceId === p2.id && t.targetId === p1.id);
+      const s1 = seatMap[p1.id], s2 = seatMap[p2.id];
+      if(p1t2 && p2t1){
+        conflicts.push({ player1Name: p1.name, player1Seat: s1, player2Name: p2.name, player2Seat: s2, severityLevel: 'تارگت متقابل شدید',
+          description: 'صندلی ' + faNum(s1) + ' (' + p1.name + ') و صندلی ' + faNum(s2) + ' (' + p2.name + ') پیوسته به یکدیگر تارگت می‌زنند.',
+          exploitTip: 'یکی از این دو را تأیید کنید و روی دیگری فشار ملایم بگذارید تا توجه از تیم مافیا دور بماند.' });
+      } else if(p1t2 || p2t1){
+        const attacker = p1t2 ? p1 : p2, victim = p1t2 ? p2 : p1;
+        const sa = seatMap[attacker.id], sv = seatMap[victim.id];
+        conflicts.push({ player1Name: attacker.name, player1Seat: sa, player2Name: victim.name, player2Seat: sv, severityLevel: 'فشار یک‌طرفه',
+          description: 'صندلی ' + faNum(sa) + ' (' + attacker.name + ') روی صندلی ' + faNum(sv) + ' (' + victim.name + ') اتهام زده است.',
+          exploitTip: 'در دفاع از صندلی ' + faNum(sv) + ' سخن بگویید یا موج صندلی ' + faNum(sa) + ' را تشدید کنید تا شکاف شهروندی عمیق‌تر شود.' });
+      }
+    }
+  }
+  const tactics = [];
+  const ranked = alive.map(p => ({ p, sc: scoreMap[p.id] ? scoreMap[p.id].totalScore : 50 }))
+    .sort((a, b) => b.sc - a.sc);
+  ranked.slice(0, 4).forEach(x => {
+    const seat = seatMap[x.p.id];
+    const recv = targetsInStage.filter(t => t.targetId === x.p.id).length;
+    if(x.sc >= 60 || recv >= 2){
+      tactics.push({ targetPlayerName: x.p.name, targetSeat: seat, tacticTitle: 'سوار شدن روی موج منفی صندلی ' + faNum(seat),
+        tacticDescription: '«' + x.p.name + '» هم‌اکنون ' + faNum(x.sc) + '٪ مشکوکی و ' + faNum(recv) + ' تارگت دارد. تارگت زدن به او بسیار طبیعی به نظر می‌رسد و شک کسی را برنمی‌انگیزد.',
+        safetyLevel: 'ایمن' });
+    } else {
+      tactics.push({ targetPlayerName: x.p.name, targetSeat: seat, tacticTitle: 'ایجاد شک بدون درگیری مستقیم',
+        tacticDescription: 'با اشاره به سکوت یا موضع خنثی «' + x.p.name + '»، بحث میز را به سمت او منحرف کنید.',
+        safetyLevel: 'کم‌ریسک' });
+    }
+  });
+  return { conflicts: conflicts.slice(0, 5), tactics: tactics.slice(0, 4) };
+}
+
+/* ---------- گزارش اشتراک‌گذاری ---------- */
+function buildShareReport(gid, stage){
+  const g = db.games.find(x => x.id === gid); if(!g) return '';
+  if(stage == null) stage = g.currentStageIndex;
+  const scores = analyzeGame(gid, stage);
+  const players = playersOf(gid);
+  const L = [];
+  L.push('🕵️ گزارش تحلیلی بازی مافیا — ' + g.name);
+  L.push('📅 مرحله: ' + stageTitle(stage));
+  L.push('👥 سناریو: ' + faNum(g.citizenCount) + ' شهروند | ' + faNum(g.mafiaCount) + ' مافیا' + (g.independentCount ? ' | ' + faNum(g.independentCount) + ' مستقل' : ''));
+  L.push('');
+  L.push('🏆 رتبه‌بندی سوءظن (بالاترین خطر اول):');
+  scores.forEach((s, i) => {
+    L.push(faNum(i+1) + '. ' + s.playerName + ' — ' + faNum(s.totalScore) + '٪ | ' + s.statusLabel);
+  });
+  L.push('');
+  const top = scores.filter(s => !s.isOwner && !s.isEliminated).slice(0, 3);
+  if(top.length){
+    L.push('🎯 مظنونین اصلی و دلایل:');
+    top.forEach(s => {
+      const reasons = s.positiveFactors.filter(f => f.points > 0).slice(0, 3).map(f => f.title + ' (+' + faNum(f.points) + ')');
+      L.push('• ' + s.playerName + ': ' + (reasons.length ? reasons.join('؛ ') : 'شاهد قابل‌توجهی ثبت نشده'));
+    });
+    L.push('');
+  }
+  const votesNow = votesOf(gid).filter(v => v.stageIndex === stage);
+  if(votesNow.length){
+    L.push('🗳️ آرای این مرحله:');
+    votesNow.forEach(v => {
+      const voter = byId(players, v.voterId);
+      const tgt = v.targetId >= 0 ? byId(players, v.targetId) : null;
+      L.push('• ' + (voter ? voter.name : '؟') + ' → ' + (tgt ? tgt.name : 'ممتنع'));
+    });
+    L.push('');
+  }
+  const elim = players.filter(p => p.isEliminated);
+  if(elim.length){
+    L.push('💀 حذف‌شده‌ها: ' + elim.map(p => p.name + (p.eliminatedStageIndex != null ? ' (' + stageTitle(p.eliminatedStageIndex) + ')' : '')).join('، '));
+    L.push('');
+  }
+  L.push('— ساخته‌شده با «تحلیل‌گر مافیا» 🎭');
+  return L.join('\n');
+}
+
+/* ---------- پرامپت هوش مصنوعی ---------- */
+function buildAiPrompt(gid, stage){
+  const g = db.games.find(x => x.id === gid); if(!g) return '';
+  if(stage == null) stage = g.currentStageIndex;
+  const players = playersOf(gid);
+  const scores = analyzeGame(gid, stage);
+  const L = [];
+  L.push('تو یک تحلیل‌گر حرفه‌ای بازی مافیا هستی. بر اساس داده‌های واقعی زیر، وضعیت بازی را به فارسی روان و عامیانه تحلیل کن.');
+  L.push('');
+  L.push('## ۱. اطلاعات بازی');
+  L.push('نام بازی: ' + g.name);
+  L.push('مرحله فعلی: ' + stageTitle(stage));
+  L.push('سناریو: ' + g.citizenCount + ' شهروند، ' + g.mafiaCount + ' مافیا' + (g.independentCount ? '، ' + g.independentCount + ' مستقل' : ''));
+  L.push('');
+  L.push('## ۲. بازیکنان و وضعیت');
+  players.forEach((p, i) => {
+    let tags = 'صندلی ' + (i+1);
+    if(p.isEliminated) tags += ' — حذف‌شده در ' + stageTitle(p.eliminatedStageIndex != null ? p.eliminatedStageIndex : stage);
+    if(p.isOwner) tags += ' — کاربر (من)';
+    if(p.knownRole === 'MAFIA' && !p.isOwner) tags += ' — یار مافیا (قطعی از دید کاربر)';
+    L.push('- ' + p.name + ': ' + tags);
+  });
+  L.push('');
+  L.push('## ۳. رتبه‌بندی موتور محاسباتی داخلی (سوءظن ۰ تا ۱۰۰)');
+  scores.forEach(s => {
+    L.push('- ' + s.playerName + ': ' + s.totalScore + ' (' + s.statusLabel + ') | تارگت زده: ' + s.totalTargetsMade + '، دریافتی: ' + s.targetsReceivedCount + '، نوسان: ' + s.targetFlipsCount + '، رأی دریافتی: ' + s.votesReceivedCount + '، یادداشت مشکوک: ' + s.suspiciousNotesCount);
+  });
+  L.push('');
+  L.push('## ۴. عوامل مؤثر روی هر بازیکن');
+  scores.forEach(s => {
+    const fs = s.positiveFactors.filter(f => f.points !== 0).concat(s.negativeFactors.filter(f => f.points !== 0));
+    if(fs.length) L.push('- ' + s.playerName + ': ' + fs.map(f => f.title + ' (' + (f.points > 0 ? '+' : '') + f.points + ')').join('؛ '));
+  });
+  L.push('');
+  L.push('## ۵. تارگت‌های ثبت‌شده تا این مرحله');
+  const tgts = targetsOf(gid).filter(t => t.stageIndex <= stage);
+  if(tgts.length){
+    tgts.forEach(t => {
+      const src = byId(players, t.sourceId), dst = byId(players, t.targetId);
+      if(src && dst) L.push('- ' + stageTitle(t.stageIndex) + ': ' + src.name + ' → ' + dst.name);
+    });
+  } else L.push('(تارگتی ثبت نشده)');
+  L.push('');
+  L.push('## ۶. رأی‌های خروج تا این مرحله');
+  const vts = votesOf(gid).filter(v => v.stageIndex <= stage);
+  if(vts.length){
+    vts.forEach(v => {
+      const voter = byId(players, v.voterId);
+      const tgt = v.targetId >= 0 ? byId(players, v.targetId) : null;
+      if(voter) L.push('- ' + stageTitle(v.stageIndex) + ': ' + voter.name + ' → ' + (tgt ? tgt.name : 'ممتنع'));
+    });
+  } else L.push('(رأیی ثبت نشده)');
+  L.push('');
+  L.push('## ۷. یادداشت‌های رفتاری کاربر');
+  const nts = notesOf(gid).filter(n => n.stageIndex <= stage);
+  if(nts.length){
+    nts.forEach(n => {
+      const p = byId(players, n.playerId);
+      if(p) L.push('- [' + n.category + ' | ' + stageTitle(n.stageIndex) + '] ' + p.name + ': ' + n.text);
+    });
+  } else L.push('(یادداشتی ثبت نشده)');
+  L.push('');
+  L.push('## ۸. خروجی درخواستی');
+  L.push('پاسخ را با این ساختار به فارسی بنویس:');
+  L.push('۱) خلاصه وضعیت میز (۲-۳ جمله)');
+  L.push('۲) سه مظنون اصلی با دلیل منطقی');
+  L.push('۳) بازیکنان سفید/کم‌خطر');
+  L.push('۴) الگوهای پنهان (هماهنگی، زرگری، موج‌سواری)');
+  L.push('۵) پیش‌بینی رأی‌گیری بعدی');
+  L.push('۶) توصیه عملی برای کاربر با توجه به نقشش');
+  return L.join('\n');
+}
+
+/* ---------- تحلیلگر محلی (آفلاین) ---------- */
+function localAnalysis(gid, stage){
+  const g = db.games.find(x => x.id === gid); if(!g) return '';
+  if(stage == null) stage = g.currentStageIndex;
+  const scores = analyzeGame(gid, stage);
+  const players = playersOf(gid);
+  const living = scores.filter(s => !s.isEliminated && !s.isOwner);
+  const suspects = living.filter(s => s.knownRole !== 'MAFIA').slice(0, 3);
+  const whites = living.filter(s => s.totalScore <= 45 && s.knownRole !== 'MAFIA').slice(-3).reverse();
+  const L = [];
+  L.push('🧠 تحلیل‌گر محلی (آفلاین) — مرحله «' + stageTitle(stage) + '»');
+  L.push('');
+  L.push('۱) خلاصه وضعیت میز:');
+  const aliveCount = players.filter(p => !p.isEliminated).length;
+  L.push('در پایان «' + stageTitle(stage) + '» از ' + faNum(players.length) + ' بازیکن، ' + faNum(aliveCount) + ' نفر زنده‌اند. موتور داخلی ' + faNum(scores.length) + ' بازیکن را ارزیابی کرد؛ بالاترین سطح سوءظن ' + (living.length ? faNum(living[0].totalScore) + '٪ (' + living[0].playerName + ')' : 'ثبت نشده') + ' است.');
+  L.push('');
+  L.push('۲) مظنونین اصلی:');
+  if(suspects.length) suspects.forEach((s, i) => {
+    const reasons = s.positiveFactors.filter(f => f.points > 0).slice(0, 3).map(f => f.title);
+    L.push(faNum(i+1) + '. ' + s.playerName + ' (' + faNum(s.totalScore) + '٪ — ' + s.statusLabel + ')' + (reasons.length ? ': ' + reasons.join('؛ ') : ''));
+  });
+  else L.push('هنوز داده کافی برای معرفی مظنون ثبت نشده است. تارگت‌ها و یادداشت‌ها را در تب میز بازی ثبت کنید.');
+  L.push('');
+  L.push('۳) بازیکنان سفید / کم‌خطر:');
+  if(whites.length) L.push(whites.map(s => s.playerName + ' (' + faNum(s.totalScore) + '٪)').join('، '));
+  else L.push('فعلاً بازیکن کاملاً سفیدی شناسایی نشد.');
+  L.push('');
+  L.push('۴) الگوهای پنهان:');
+  const flippers = living.filter(s => s.targetFlipsCount > 0);
+  const clashing = living.filter(s => s.positiveFactors.some(f => f.title === 'تقابل مستقیم و دوطرفه'));
+  const riders = living.filter(s => s.positiveFactors.some(f => f.title === 'فشار روی بازیکنان حذف‌شده'));
+  const pats = [];
+  if(flippers.length) pats.push('🔄 نوسان تارگت: ' + flippers.map(s => s.playerName).join('، ') + ' (نشانه احتمالی موج‌سواری)');
+  if(clashing.length) pats.push('⚔️ تقابل دوطرفه: ' + clashing.map(s => s.playerName).join('، ') + ' (یا دعوای واقعی یا زرگری)');
+  if(riders.length) pats.push('🌊 فشار روی حذف‌شده‌ها: ' + riders.map(s => s.playerName).join('، '));
+  L.push(pats.length ? pats.join('\n') : 'الگوی پنهان معناداری از داده‌های فعلی استخراج نشد.');
+  L.push('');
+  L.push('۵) پیش‌بینی رأی‌گیری بعدی:');
+  if(suspects.length) L.push('به‌احتمال زیاد میز روی «' + suspects[0].playerName + '» متمرکز می‌شود (' + faNum(suspects[0].totalScore) + '٪ سوءظن' + (suspects[0].votesReceivedCount ? '، ' + faNum(suspects[0].votesReceivedCount) + ' رأی دریافتی تاکنون' : '') + ').');
+  else L.push('با داده فعلی قابل پیش‌بینی نیست.');
+  L.push('');
+  L.push('۶) توصیه عملی:');
+  const guide = speechGuide(gid, stage);
+  if(guide && guide.ownerRole === 'MAFIA') L.push('🗡️ شما مافیایید: فشار میز را از روی یارانتان بردارید، ' + (suspects.length ? 'و پیکان اتهام را آرام به سمت «' + suspects[0].playerName + '» بچرخانید.' : 'و فعلاً کم‌حرف و منطقی بازی کنید.'));
+  else if(guide && guide.ownerRole === 'INDEPENDENT') L.push('🎭 شما مستقل‌اید: دو قطبی بین مظنونین بالا ایجاد کنید ولی ردپای خودتان را پاک نگه دارید.');
+  else L.push('🛡️ شما شهروندید: ' + (suspects.length ? 'با فکت و آرامش روی «' + suspects[0].playerName + '» تمرکز کنید و از شهروندهای سفید (' + (whites.length ? whites.map(s => s.playerName).join('، ') : '—') + ') یارگیری کنید.' : 'فعلاً گوش دهید، یادداشت بردارید و تارگت بی‌فکت نزنید.'));
+  return L.join('\n');
+}
+
+return {
+  analyzePlayer, analyzeGame, histScore,
+  speechGuide, stealthAnalysis,
+  buildShareReport, buildAiPrompt, localAnalysis
+};
+})();
+// ===== UI =====
+const UI = {
+  tab: 'table',
+  section: 'games',       // زیربخش تنظیمات
+  selSource: null,        // بازیکن مبدأ انتخاب‌شده روی میز
+  pendingTargets: null,   // Set از id مقصدها در حالت انتخاب
+  reportStage: 0,
+  reportSel: null,        // بازیکن باز شده در رتبه‌بندی
+  stealth: false,
+  chat: [],               // پیام‌های چت تست AI
+  models: [],
+  modelsLoading: false,
+  aiBusy: false,
+  voteStage: null,        // null = مرحله جاری
+  notesCat: 'SUSPICIOUS',
+  weightsDraft: null,
+
+  /* ---------- ناوبری ---------- */
+  go(tab, section){
+    this.tab = tab;
+    if(section) this.section = section;
+    if(tab === 'votes' && this.voteStage == null){ const g = activeGame(); this.voteStage = g ? g.currentStageIndex : 0; }
+    if(tab === 'reports'){ const g = activeGame(); if(g && (this.reportStage > g.maxUnlockedStageIndex)) this.reportStage = g.currentStageIndex; }
+    this.render();
+    document.getElementById('main').scrollTop = 0;
+  },
+
+  toast(msg){
+    const el = document.getElementById('snackbar');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(this._toastT);
+    this._toastT = setTimeout(() => el.classList.remove('show'), 2600);
+  },
+
+  /* ---------- شیت پایین ---------- */
+  openSheet(html){
+    document.getElementById('sheet-body').innerHTML = html;
+    document.getElementById('sheet').classList.add('show');
+    document.getElementById('sheet-backdrop').classList.add('show');
+  },
+  closeSheet(){
+    document.getElementById('sheet').classList.remove('show');
+    document.getElementById('sheet-backdrop').classList.remove('show');
+  },
+  confirmSheet(title, msg, okLabel, onOk, danger){
+    this._confirmOk = onOk;
+    this.openSheet(
+      '<h3>' + esc(title) + '</h3>' +
+      '<div class="muted" style="font-size:13px;margin-bottom:14px">' + msg + '</div>' +
+      '<div class="btn-row">' +
+      '<button class="btn ghost" data-act="sheet-cancel">انصراف</button>' +
+      '<button class="btn ' + (danger ? 'crimson-d' : 'crimson') + '" data-act="sheet-ok">' + esc(okLabel) + '</button>' +
+      '</div>'
+    );
+  },
+  promptSheet(title, label, value, okLabel, onOk, opts){
+    opts = opts || {};
+    this._promptOk = onOk;
+    this._promptId = 'prompt-in-' + Date.now();
+    let inputHtml;
+    if(opts.multiline) inputHtml = '<textarea id="' + this._promptId + '" placeholder="' + esc(opts.placeholder || '') + '">' + esc(value || '') + '</textarea>';
+    else if(opts.type === 'number') inputHtml = '<input type="number" id="' + this._promptId + '" value="' + esc(value == null ? '' : value) + '" inputmode="numeric">';
+    else inputHtml = '<input type="text" id="' + this._promptId + '" value="' + esc(value || '') + '" placeholder="' + esc(opts.placeholder || '') + '">';
+    this.openSheet(
+      '<h3>' + esc(title) + '</h3>' +
+      (label ? '<label class="fl">' + esc(label) + '</label>' : '') +
+      inputHtml +
+      '<div class="btn-row" style="margin-top:14px">' +
+      '<button class="btn ghost" data-act="sheet-cancel">انصراف</button>' +
+      '<button class="btn crimson" data-act="sheet-ok">' + esc(okLabel || 'تأیید') + '</button>' +
+      '</div>'
+    );
+    const inp = document.getElementById(this._promptId);
+    if(inp){ inp.focus(); if(opts.ltr) inp.classList.add('ltr'); }
+  },
+
+  /* ---------- رندر کل ---------- */
+  render(){
+    // نوار بالا
+    const g = activeGame();
+    document.getElementById('top-stage').textContent = g ? stageTitle(g.currentStageIndex) : '—';
+    const tg = document.getElementById('topbar-game');
+    tg.textContent = g ? g.name + ' ▾' : 'انتخاب بازی ▾';
+    document.getElementById('stealth-dot').classList.toggle('on', this.stealth);
+    // تب‌ها
+    ['table','votes','reports','settings'].forEach(t => {
+      document.getElementById('tab-' + t).classList.toggle('active', t === this.tab);
+    });
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-nav') === this.tab);
+    });
+    // محتوای تب فعال
+    const el = document.getElementById('tab-' + this.tab);
+    if(!g && this.tab !== 'settings'){ el.innerHTML = this.noGameHtml(); return; }
+    if(this.tab === 'table') el.innerHTML = this.renderTable();
+    else if(this.tab === 'votes') el.innerHTML = this.renderVotes();
+    else if(this.tab === 'reports') el.innerHTML = this.renderReports();
+    else el.innerHTML = this.renderSettings();
+  },
+
+  noGameHtml(){
+    return '<div class="empty"><div class="big">🎭</div>' +
+      '<div style="font-weight:800;color:var(--txt);margin-bottom:6px">هنوز بازی فعالی ندارید</div>' +
+      '<div style="font-size:12.5px;margin-bottom:16px">یک بازی جدید بسازید یا بازی نمونه را امتحان کنید.</div>' +
+      '<div class="btn-row" style="max-width:340px;margin:0 auto">' +
+      '<button class="btn crimson" data-act="new-game">＋ بازی جدید</button>' +
+      '<button class="btn ghost" data-act="sample-game">بازی نمونه</button>' +
+      '</div></div>';
+  },
+
+  scoreClass(s){ return s <= 25 ? 'score-g' : s <= 45 ? 'score-y' : s <= 65 ? 'score-o' : 'score-r'; },
+  scoreColor(s){ return s <= 25 ? 'var(--green)' : s <= 45 ? 'var(--yellow)' : s <= 65 ? 'var(--orange)' : 'var(--red)'; }
+};
+/* alias */
+function toast(msg){ UI.toast(msg); }
+UI._confirmOk = null; UI._promptOk = null; UI._promptId = null;
+window.UI = UI;
+
+/* ---------- مدیریت رویدادها (delegation) ---------- */
+document.addEventListener('click', function(e){
+  const navBtn = e.target.closest ? e.target.closest('.nav-btn') : null;
+  if(navBtn){ UI.go(navBtn.getAttribute('data-nav')); return; }
+  const el = e.target.closest ? e.target.closest('[data-act]') : null;
+  if(!el) return;
+  const tag = el.tagName;
+  if(tag === 'SELECT' || tag === 'INPUT' || tag === 'TEXTAREA') return; // اینها با change/input هندل می‌شوند
+  const act = el.getAttribute('data-act');
+  const id = el.getAttribute('data-id') != null ? Number(el.getAttribute('data-id')) : null;
+  if(typeof Actions[act] === 'function'){ e.preventDefault(); Actions[act](id, el, e); }
+});
+/* long-press روی عنوان = حالت مخفی مافیا */
+(function(){
+  const t = document.getElementById('app-title');
+  let timer = null;
+  function start(e){
+    timer = setTimeout(() => {
+      UI.stealth = !UI.stealth;
+      UI.toast(UI.stealth ? '🕶️ حالت مخفی مافیا فعال شد (نگهداشتن انگشت روی عنوان = خاموش)' : 'حالت مخفی خاموش شد');
+      UI.render();
+      if(navigator.vibrate) try{ navigator.vibrate(30); }catch(err){}
+      timer = null;
+    }, 650);
+  }
+  function cancel(){ if(timer){ clearTimeout(timer); timer = null; } }
+  t.addEventListener('touchstart', start, { passive: true });
+  t.addEventListener('touchend', cancel);
+  t.addEventListener('touchmove', cancel);
+  t.addEventListener('mousedown', start);
+  t.addEventListener('mouseup', cancel);
+  t.addEventListener('mouseleave', cancel);
+  t.addEventListener('contextmenu', e => e.preventDefault());
+})();
+
+/* ============================================================
+   Actions + رندر تب میز بازی و رأی‌گیری
+   ============================================================ */
+const Actions = {};
+
+/* ---------- هندسه میز ---------- */
+function seatPos(i, n){
+  const ang = (-90 + i * 360 / n) * Math.PI / 180;
+  return { right: 50 - 41 * Math.cos(ang), top: 50 + 41 * Math.sin(ang), ax: 50 + 41 * Math.cos(ang), ay: 50 + 41 * Math.sin(ang) };
+}
+
+Object.assign(UI, {
+  renderTable(){
+    const g = activeGame();
+    const players = playersOf(g.id);
+    const stage = g.currentStageIndex;
+    const scores = Core.analyzeGame(g.id, stage);
+    const scoreMap = {}; scores.forEach(s => { scoreMap[s.playerId] = s; });
+    const stageTargets = targetsOf(g.id).filter(t => t.stageIndex === stage);
+    const n = players.length;
+    const H = [];
+
+    // چیپس مراحل
+    H.push('<div class="chips">');
+    for(let i = 0; i <= Math.max(4, g.maxUnlockedStageIndex); i++){
+      const locked = i > g.maxUnlockedStageIndex;
+      H.push('<button class="chip' + (i === stage ? ' active' : '') + (locked ? ' locked' : '') + '" data-act="stage-set" data-id="' + i + '">' + (locked ? '🔒 ' : '') + stageTitle(i) + '</button>');
+    }
+    H.push('</div>');
+
+    // میز دایره‌ای
+    H.push('<div id="table-wrap">');
+    H.push('<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1">');
+    // خطوط تارگت ثبت‌شده
+    stageTargets.forEach(t => {
+      const si = players.findIndex(p => p.id === t.sourceId);
+      const ti = players.findIndex(p => p.id === t.targetId);
+      if(si < 0 || ti < 0) return;
+      if(UI.selSource === t.sourceId && UI.pendingTargets && UI.pendingTargets.has(t.targetId)) return; // خط طلایی جدا می‌کشیم
+      const a = seatPos(si, n), b = seatPos(ti, n);
+      const dim = UI.selSource != null && UI.selSource !== t.sourceId;
+      H.push('<line x1="' + a.ax.toFixed(2) + '" y1="' + a.ay.toFixed(2) + '" x2="' + b.ax.toFixed(2) + '" y2="' + b.ay.toFixed(2) + '" stroke="' + LINE_COLORS[si % LINE_COLORS.length] + '" stroke-width="0.55" opacity="' + (dim ? '0.18' : '0.75') + '" stroke-linecap="round"/>');
+    });
+    // خطوط در حال انتخاب (طلایی)
+    if(UI.selSource != null && UI.pendingTargets){
+      const si = players.findIndex(p => p.id === UI.selSource);
+      if(si >= 0){
+        const a = seatPos(si, n);
+        UI.pendingTargets.forEach(tid => {
+          const ti = players.findIndex(p => p.id === tid);
+          if(ti < 0) return;
+          const b = seatPos(ti, n);
+          H.push('<line x1="' + a.ax.toFixed(2) + '" y1="' + a.ay.toFixed(2) + '" x2="' + b.ax.toFixed(2) + '" y2="' + b.ay.toFixed(2) + '" stroke="#FFD54F" stroke-width="0.8" opacity="0.95" stroke-linecap="round"/>');
+        });
+      }
+    }
+    H.push('</svg>');
+    H.push('<div id="table-center" style="z-index:3"><span class="tc-stage">' + stageTitle(stage) + '</span><span class="tc-game">' + esc(g.name) + '</span><span class="tc-hint">' + (UI.selSource != null ? 'مقص‌ها را لمس کنید' : 'لمس = انتخاب مبدأ • نگه‌داشتن = پروفایل') + '</span></div>');
+    players.forEach((p, i) => {
+      const pos = seatPos(i, n);
+      const s = scoreMap[p.id];
+      const cls = ['seat'];
+      if(UI.selSource === p.id) cls.push('src');
+      if(UI.selSource != null && UI.pendingTargets && UI.pendingTargets.has(p.id)) cls.push('tgt');
+      if(p.isEliminated) cls.push('dead');
+      if(p.isOwner) cls.push('owner');
+      if(p.knownRole === 'MAFIA' && !p.isOwner) cls.push('mafia-mate');
+      H.push('<button class="' + cls.join(' ') + '" data-act="seat" data-id="' + p.id + '" data-long="player" style="right:' + pos.right.toFixed(2) + '%;top:' + pos.top.toFixed(2) + '%;z-index:2">' +
+        '<span class="seat-circle">' + esc(p.name.slice(0, 2)) + '<span class="seat-num">' + faNum(i + 1) + '</span></span>' +
+        '<span class="seat-name">' + esc(p.name) + '</span>' +
+        (s ? '<span class="seat-score ' + UI.scoreClass(s.totalScore) + '">' + faNum(s.totalScore) + '٪</span>' : '') +
+        '</button>');
+    });
+    H.push('</div>');
+
+    // نوار انتخاب
+    const selP = UI.selSource != null ? players.find(p => p.id === UI.selSource) : null;
+    H.push('<div id="sel-bar"' + (selP ? ' class="show"' : '') + '>' +
+      (selP
+        ? '<span style="font-size:12.5px;flex:1"><b class="gold">مبدأ: ' + esc(selP.name) + '</b><br><span class="tiny">' + faNum(UI.pendingTargets ? UI.pendingTargets.size : 0) + ' مقصد انتخاب شده — «' + stageTitle(stage) + '»</span></span>' +
+          '<button class="btn sm ghost" data-act="sel-clear">پاک کردن</button>' +
+          '<button class="btn sm gold" data-act="sel-save">ذخیره تارگت‌ها ✓</button>'
+        : '') +
+      '</div>');
+
+    // دکمه‌های زیر میز
+    H.push('<div class="btn-row" style="margin-top:6px">' +
+      '<button class="btn sm ghost" data-act="add-player">＋ بازیکن</button>' +
+      '<button class="btn sm ghost" data-act="manage-game">🎮 مدیریت بازی</button>' +
+      '<button class="btn sm crimson" data-act="advance-stage">پایان «' + stageTitle(stage) + '» ◄</button>' +
+      '</div>');
+
+    // پنل استلث مافیا
+    if(UI.stealth){
+      const st = Core.stealthAnalysis(g.id, stage);
+      H.push('<div class="card" style="margin-top:12px;border-color:rgba(229,57,53,.45)"><h3>🕶️ پنل مخفی گمراه‌سازی</h3>' +
+        '<div class="sub">فقط با نگه‌داشتن انگشت روی عنوان برنامه فعال/خاموش می‌شود</div>');
+      if(st.conflicts.length){
+        H.push('<div style="font-size:12px;font-weight:800;color:var(--crimson-l);margin:6px 0 2px">⚔️ شکاف‌های شهروندی</div>');
+        st.conflicts.forEach(c => {
+          H.push('<div class="conflict-item"><span class="c-sev">' + esc(c.severityLevel) + '</span><br>' + esc(c.description) + '<br><span class="tiny">💡 ' + esc(c.exploitTip) + '</span></div>');
+        });
+      }
+      if(st.tactics.length){
+        H.push('<div style="font-size:12px;font-weight:800;color:var(--green);margin:10px 0 2px">🎭 تاکتیک‌های انحرافی</div>');
+        st.tactics.forEach(t => {
+          H.push('<div class="tactic-item"><b>' + esc(t.tacticTitle) + '</b> <span class="t-safe">' + esc(t.safetyLevel) + '</span><br>' + esc(t.tacticDescription) + '</div>');
+        });
+      }
+      if(!st.conflicts.length && !st.tactics.length) H.push('<div class="tiny">داده‌ای برای تحلیل نیست — تارگت‌ها را ثبت کنید.</div>');
+      H.push('</div>');
+    }
+    return H.join('');
+  },
+
+  renderVotes(){
+    const g = activeGame();
+    const players = playersOf(g.id);
+    if(UI.voteStage == null) UI.voteStage = g.currentStageIndex;
+    const stage = Math.min(UI.voteStage, g.maxUnlockedStageIndex);
+    const alive = players.filter(p => !p.isEliminated || (p.eliminatedStageIndex != null && p.eliminatedStageIndex > stage));
+    const votes = votesOf(g.id).filter(v => v.stageIndex === stage);
+    const voteOf = {}; votes.forEach(v => { voteOf[v.voterId] = v.targetId; });
+    const tally = {}; votes.forEach(v => { if(v.targetId >= 0) tally[v.targetId] = (tally[v.targetId] || 0) + 1; });
+    const H = [];
+    H.push('<div class="card"><h3>🗳️ رأی‌گیری — ' + stageTitle(stage) + '</h3>' +
+      '<div class="sub">برای هر بازیکن زنده، هدف رأی خروج را انتخاب کنید. رأی‌ها مستقیماً در الگوریتم سوءظن اثر دارند.</div>' +
+      '<div class="chips">');
+    for(let i = 0; i <= g.maxUnlockedStageIndex; i++)
+      H.push('<button class="chip' + (i === stage ? ' active' : '') + '" data-act="vote-stage" data-id="' + i + '">' + stageTitle(i) + '</button>');
+    H.push('</div>');
+    if(!alive.length){
+      H.push('<div class="empty" style="padding:18px"><div class="big">💀</div>همه بازیکنان حذف شده‌اند!</div>');
+    } else {
+      alive.forEach(p => {
+        const cur = voteOf[p.id];
+        const opts = ['<option value=""' + (cur == null ? ' selected' : '') + '>— بدون رأی —</option>',
+          '<option value="-1"' + (cur === -1 ? ' selected' : '') + '>🚫 ممتنع</option>'];
+        alive.forEach(t => {
+          if(t.id === p.id) return;
+          opts.push('<option value="' + t.id + '"' + (cur === t.id ? ' selected' : '') + '>🎯 ' + esc(t.name) + '</option>');
+        });
+        H.push('<div class="row"><span class="r-name">' + esc(p.name) + '</span><span class="r-side">' +
+          '<select data-act="vote-sel" data-id="' + p.id + '" style="width:auto;min-width:130px;font-size:13px;padding:6px 8px">' + opts.join('') + '</select>' +
+          '</span></div>');
+      });
+      const tallyRows = Object.keys(tally).map(k => ({ p: players.find(x => x.id === Number(k)), c: tally[k] })).filter(x => x.p).sort((a, b) => b.c - a.c);
+      if(tallyRows.length){
+        H.push('<hr class="sep"><div style="font-size:12px;font-weight:800;color:var(--gold);margin-bottom:6px">📊 جمع رأی‌ها</div>');
+        tallyRows.forEach(x => {
+          H.push('<div class="kv"><span>' + esc(x.p.name) + '</span><b style="color:var(--crimson-l)">' + faNum(x.c) + ' رأی</b></div>');
+        });
+      }
+      H.push('<div class="btn-row" style="margin-top:12px">' +
+        '<button class="btn sm ghost" data-act="votes-clear">🗑 پاک کردن رأی‌های «' + stageTitle(stage) + '»</button>' +
+        '</div>');
+    }
+    H.push('</div>');
+    return H.join('');
+  }
+});
+
+/* ---------- اکشن‌های میز بازی ---------- */
+Object.assign(Actions, {
+  'stage-set'(i){
+    const g = activeGame();
+    if(setStage(g.id, i)){ UI.selSource = null; UI.pendingTargets = null; UI.render(); }
+  },
+  'advance-stage'(){
+    const g = activeGame();
+    UI.confirmSheet('پایان مرحله', 'پرونده «' + stageTitle(g.currentStageIndex) + '» بسته و مرحله بعد باز شود؟ تارگت‌ها و داده‌های ثبت‌شده حفظ می‌شوند.', 'بستن پرونده و رفتن به مرحله بعد ◄', () => {
+      advanceStage(g.id);
+      UI.selSource = null; UI.pendingTargets = null;
+      UI.closeSheet(); UI.render();
+    });
+  },
+  'seat'(id){
+    const g = activeGame();
+    if(UI.selSource == null){
+      UI.selSource = id;
+      UI.pendingTargets = new Set(targetsOf(g.id).filter(t => t.stageIndex === g.currentStageIndex && t.sourceId === id).map(t => t.targetId));
+      UI.render();
+    } else if(UI.selSource === id){
+      UI.selSource = null; UI.pendingTargets = null; UI.render();
+    } else {
+      if(UI.pendingTargets.has(id)) UI.pendingTargets.delete(id);
+      else UI.pendingTargets.add(id);
+      UI.render();
+    }
+  },
+  'sel-save'(){
+    const g = activeGame();
+    if(UI.selSource == null) return;
+    replaceTargets(g.id, g.currentStageIndex, UI.selSource, Array.from(UI.pendingTargets || []));
+    const cnt = UI.pendingTargets ? UI.pendingTargets.size : 0;
+    UI.selSource = null; UI.pendingTargets = null;
+    UI.render();
+    UI.toast('✓ ' + faNum(cnt) + ' تارگت برای «' + stageTitle(g.currentStageIndex) + '» ثبت شد');
+  },
+  'sel-clear'(){
+    const g = activeGame();
+    if(UI.selSource != null) replaceTargets(g.id, g.currentStageIndex, UI.selSource, []);
+    UI.selSource = null; UI.pendingTargets = null; UI.render();
+    UI.toast('تارگت‌های این بازیکن در این مرحله پاک شد');
+  },
+  'add-player'(){
+    const g = activeGame();
+    UI.promptSheet('بازیکن جدید', 'نام بازیکن', '', 'افزودن', (val) => {
+      if(addPlayer(g.id, val)){ UI.closeSheet(); UI.render(); UI.toast('بازیکن «' + val.trim() + '» اضافه شد'); }
+    });
+  },
+
+  /* ---------- رأی‌گیری ---------- */
+  'vote-stage'(i){ UI.voteStage = i; UI.render(); },
+  'vote-sel'(id, el){
+    const g = activeGame();
+    const stage = Math.min(UI.voteStage == null ? g.currentStageIndex : UI.voteStage, g.maxUnlockedStageIndex);
+    const val = el.value === '' ? null : Number(el.value);
+    if(val == null){ db.votes = db.votes.filter(v => !(v.gameId === g.id && v.stageIndex === stage && v.voterId === id)); touchGame(g.id); persist(); }
+    else setVote(g.id, stage, id, val);
+    UI.render();
+  },
+  'votes-clear'(){
+    const g = activeGame();
+    const stage = Math.min(UI.voteStage == null ? g.currentStageIndex : UI.voteStage, g.maxUnlockedStageIndex);
+    UI.confirmSheet('پاک کردن رأی‌ها', 'همه رأی‌های «' + stageTitle(stage) + '» حذف شوند؟', 'پاک کن', () => {
+      clearStageVotes(g.id, stage); UI.closeSheet(); UI.render(); UI.toast('رأی‌های این مرحله پاک شد');
+    }, true);
+  }
+});
+
+/* ---------- long-press روی صندلی = پروفایل بازیکن ---------- */
+(function(){
+  let lpTimer = null, lpEl = null, lpFired = false;
+  function start(e){
+    const el = e.target.closest ? e.target.closest('[data-long="player"]') : null;
+    if(!el) return;
+    lpEl = el; lpFired = false;
+    lpTimer = setTimeout(() => {
+      lpFired = true;
+      if(navigator.vibrate) try{ navigator.vibrate(25); }catch(err){}
+      Actions['open-player'](Number(lpEl.getAttribute('data-id')));
+    }, 520);
+  }
+  function cancel(){ if(lpTimer){ clearTimeout(lpTimer); lpTimer = null; } }
+  document.addEventListener('touchstart', start, { passive: true });
+  document.addEventListener('touchmove', cancel);
+  document.addEventListener('touchend', e => { if(lpFired){ e.preventDefault(); lpFired = false; } cancel(); });
+  document.addEventListener('mousedown', start);
+  document.addEventListener('mouseup', cancel);
+  // جلوگیری از کلیک معمولی بعد از long-press
+  document.addEventListener('click', e => { if(lpFired){ e.stopPropagation(); e.preventDefault(); lpFired = false; } }, true);
+})();
+
+/* تغییر selectها و rangeها */
+document.addEventListener('change', function(e){
+  const el = e.target.closest ? e.target.closest('[data-act]') : null;
+  if(!el) return;
+  const act = el.getAttribute('data-act');
+  const id = el.getAttribute('data-id') != null ? Number(el.getAttribute('data-id')) : null;
+  if(typeof Actions[act] === 'function') Actions[act](id, el, e);
+});
+document.addEventListener('input', function(e){
+  const el = e.target.closest ? e.target.closest('[data-inp]') : null;
+  if(!el) return;
+  const act = el.getAttribute('data-inp');
+  const id = el.getAttribute('data-id') != null ? Number(el.getAttribute('data-id')) : null;
+  if(typeof Actions[act] === 'function') Actions[act](id, el, e);
+});
+
+/* ============================================================
+   شیت‌ها: پروفایل بازیکن، یادداشت، مدیریت بازی، بازی جدید
+   ============================================================ */
+Object.assign(Actions, {
+  'sheet-ok'(){
+    if(UI._promptOk){
+      const inp = document.getElementById(UI._promptId);
+      const v = inp ? inp.value : '';
+      if(!String(v).trim()){ UI.toast('لطفاً مقدار را وارد کنید'); return; }
+      const cb = UI._promptOk; UI._promptOk = null; cb(v);
+    } else if(UI._confirmOk){
+      const cb = UI._confirmOk; UI._confirmOk = null; cb();
+    } else UI.closeSheet();
+  },
+  'sheet-cancel'(){ UI._promptOk = null; UI._confirmOk = null; UI.closeSheet(); },
+
+  'open-player'(pid){
+    const g = activeGame(); if(!g) return;
+    const p = db.players.find(x => x.id === pid); if(!p) return;
+    UI._sheetPlayer = pid;
+    const s = Core.analyzePlayer(g.id, pid, g.currentStageIndex);
+    const pNotes = notesOf(g.id).filter(n => n.playerId === pid).sort((a, b) => b.ts - a.ts);
+    const secrets = db.secretNotes.filter(x => x.playerId === pid).sort((a, b) => b.ts - a.ts);
+    const players = playersOf(g.id);
+    const idx = players.findIndex(x => x.id === pid);
+    const H = [];
+    H.push('<h3>' + esc(p.name) + (p.isOwner ? ' 👑' : '') + (p.knownRole === 'MAFIA' && !p.isOwner ? ' 🗡️' : '') + (p.isEliminated ? ' 💀' : '') + '</h3>');
+    if(s){
+      H.push('<div style="display:flex;align-items:center;gap:10px">' +
+        '<span class="score-badge" style="color:' + UI.scoreColor(s.totalScore) + ';border-color:' + UI.scoreColor(s.totalScore) + '">' + faNum(s.totalScore) + '٪</span>' +
+        '<span style="flex:1"><span class="status-chip ' + (s.totalScore >= 66 ? 'st-warn' : 'st-ok') + '">' + esc(s.statusLabel) + '</span>' +
+        '<div class="bar"><i style="width:' + s.totalScore + '%;background:' + UI.scoreColor(s.totalScore) + '"></i></div></span></div>');
+      H.push('<div class="kv" style="margin-top:6px"><span>تارگت زده: <b>' + faNum(s.totalTargetsMade) + '</b> | دریافتی: <b>' + faNum(s.targetsReceivedCount) + '</b> | نوسان: <b>' + faNum(s.targetFlipsCount) + '</b> | رأی دریافتی: <b>' + faNum(s.votesReceivedCount) + '</b></span></div>');
+    }
+    // امتیاز دستی
+    H.push('<label class="fl">🖐 سوءظن شخصی شما (امتیاز دستی)</label>' +
+      '<div class="inline-range"><input type="range" min="0" max="100" step="5" value="' + (s ? s.manualScore : 50) + '" data-act="manual-save" data-inp="manual-live" data-id="' + pid + '"><span class="rv" id="pl-manual-val">' + faNum(s ? s.manualScore : 50) + '</span></div>');
+    // دکمه‌های عملیات
+    H.push('<div class="btn-row" style="margin-top:10px">' +
+      '<button class="btn sm ghost" data-act="pl-rename" data-id="' + pid + '">✏️ تغییر نام</button>' +
+      '<button class="btn sm ghost" data-act="pl-elim" data-id="' + pid + '">' + (p.isEliminated ? '↩️ بازگشت' : '💀 حذف از بازی') + '</button>' +
+      '<button class="btn sm ghost" data-act="pl-move" data-id="' + pid + '" data-dir="-1">→</button>' +
+      '<button class="btn sm ghost" data-act="pl-move" data-id="' + pid + '" data-dir="1">←</button>' +
+      '</div>');
+    if(g.ownerRole === 'MAFIA' && !p.isOwner){
+      H.push('<button class="btn sm block ' + (p.knownRole === 'MAFIA' ? 'crimson' : 'ghost') + '" style="margin-top:8px" data-act="pl-mate" data-id="' + pid + '">' + (p.knownRole === 'MAFIA' ? '🗡️ یار مافیا است — لغو' : '🗡️ تعیین به عنوان یار مافیا') + '</button>');
+    }
+    // یادداشت‌ها
+    H.push('<hr class="sep"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--gold);font-size:13px">📝 یادداشت‌ها</b>' +
+      '<button class="btn sm crimson" data-act="note-add" data-id="' + pid + '">＋ یادداشت</button></div>');
+    H.push('<div class="tag-list">' +
+      ['تناقض','تغییر موضع','واکنش تدافعی','سکوت','استرس'].map(t => '<button class="tag" data-act="quick-tag" data-id="' + pid + '" data-tag="' + t + '" data-cat="SUSPICIOUS">⚡ ' + t + '</button>').join('') +
+      ['ادعای کارآگاه','ادعای دکتر'].map(t => '<button class="tag" data-act="quick-tag" data-id="' + pid + '" data-tag="' + t + '" data-cat="TALK">🗣 ' + t + '</button>').join('') +
+      '</div>');
+    if(pNotes.length){
+      pNotes.forEach(n => {
+        H.push('<div class="note-item"><span class="cat-badge cat-' + n.category + '">' + (n.category === 'SUSPICIOUS' ? 'مشکوک' : n.category === 'TALK' ? 'صحبت' : n.category === 'OPINION' ? 'نظر' : 'آزاد') + ' • ' + stageTitle(n.stageIndex) + '</span><span class="n-txt">' + esc(n.text) + '</span><button class="n-del" data-act="note-del" data-id="' + n.id + '">✕</button></div>');
+      });
+    } else H.push('<div class="tiny" style="margin-top:6px">یادداشتی ثبت نشده. تگ‌های سریع بالا را بزنید یا یادداشت آزاد بنویسید.</div>');
+    // یادداشت محرمانه (ویژه مالک مافیا)
+    if(g.ownerRole === 'MAFIA'){
+      H.push('<hr class="sep"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--purple);font-size:13px">🕶️ یادداشت محرمانه + پیشنهاد گمراه‌سازی</b>' +
+        '<button class="btn sm purple" data-act="secret-add" data-id="' + pid + '">＋</button></div>');
+      secrets.forEach(sn => {
+        H.push('<div class="note-item" style="border-color:rgba(179,136,255,.4)"><span class="n-txt">' + esc(sn.content) + (sn.misdirectionSuggestion ? '<br><span class="tiny">💡 ' + esc(sn.misdirectionSuggestion) + '</span>' : '') + '</span><button class="n-del" data-act="secret-del" data-id="' + sn.id + '">✕</button></div>');
+      });
+    }
+    H.push('<div class="btn-row" style="margin-top:14px"><button class="btn sm ghost" data-act="sheet-cancel">بستن</button>' +
+      '<button class="btn sm crimson-d" data-act="pl-del" data-id="' + pid + '">🗑 حذف کامل بازیکن</button></div>');
+    UI.openSheet(H.join(''));
+  },
+
+  'manual-live'(pid, el){
+    const lbl = document.getElementById('pl-manual-val');
+    if(lbl) lbl.textContent = faNum(el.value);
+  },
+  'manual-save'(pid, el){
+    const g = activeGame();
+    setManual(g.id, pid, g.currentStageIndex, Number(el.value));
+    UI.render();
+    UI.toast('سوءظن شخصی ثبت شد: ' + faNum(el.value) + ' از ۱۰۰');
+  },
+  'pl-rename'(pid){
+    const p = db.players.find(x => x.id === pid); if(!p) return;
+    UI.promptSheet('تغییر نام', 'نام جدید بازیکن', p.name, 'ذخیره', (val) => {
+      renamePlayer(pid, val); UI.closeSheet(); UI.render(); Actions['open-player'](pid);
+    });
+  },
+  'pl-elim'(pid){ toggleEliminated(pid); UI.render(); Actions['open-player'](pid); },
+  'pl-move'(pid, el){
+    const dir = Number(el.getAttribute('data-dir') || '1');
+    movePlayer(pid, dir); UI.render(); Actions['open-player'](pid);
+  },
+  'pl-mate'(pid){ toggleMate(pid); UI.render(); Actions['open-player'](pid); },
+  'pl-del'(pid){
+    const p = db.players.find(x => x.id === pid); if(!p) return;
+    UI.confirmSheet('حذف بازیکن', '«' + esc(p.name) + '» و همه تارگت‌ها، رأی‌ها و یادداشت‌هایش برای همیشه حذف شوند؟', 'حذف کن', () => {
+      deletePlayer(pid); UI.closeSheet(); UI.render(); UI.toast('بازیکن حذف شد');
+    }, true);
+  },
+  'quick-tag'(pid, el){
+    addQuickTag(pid, el.getAttribute('data-tag'), el.getAttribute('data-cat') || 'SUSPICIOUS');
+    UI.render(); Actions['open-player'](pid);
+    UI.toast('تگ «' + el.getAttribute('data-tag') + '» ثبت شد ⚡');
+  },
+  'note-del'(id){ deleteNote(id); UI.render(); const sid = UI._sheetPlayer; if(sid) Actions['open-player'](sid); },
+  'secret-del'(id){ deleteSecretNote(id); UI.render(); const sid = UI._sheetPlayer; if(sid) Actions['open-player'](sid); },
+
+  'note-add'(pid){
+    UI._sheetPlayer = pid;
+    const g = activeGame();
+    UI.openSheet(
+      '<h3>📝 یادداشت جدید — ' + stageTitle(g.currentStageIndex) + '</h3>' +
+      '<label class="fl">دسته‌بندی</label>' +
+      '<div class="chips" id="note-cats">' +
+      [['SUSPICIOUS','😠 رفتار مشکوک'],['TALK','🗣 صحبت/ادعا'],['OPINION','💭 نظر'],['FREE','📄 آزاد']].map(c =>
+        '<button class="chip' + (c[0] === UI.notesCat ? ' active' : '') + '" data-act="note-cat" data-cat="' + c[0] + '">' + c[1] + '</button>').join('') +
+      '</div>' +
+      '<label class="fl">متن یادداشت</label>' +
+      '<textarea id="note-txt" placeholder="مثلاً: تناقض بین حرف دیروز و امروزش…"></textarea>' +
+      '<div class="btn-row" style="margin-top:12px">' +
+      '<button class="btn ghost" data-act="sheet-cancel">انصراف</button>' +
+      '<button class="btn crimson" data-act="note-save" data-id="' + pid + '">ثبت یادداشت ✓</button>' +
+      '</div>'
+    );
+  },
+  'note-cat'(id, el){
+    UI.notesCat = el.getAttribute('data-cat');
+    document.querySelectorAll('#note-cats .chip').forEach(c => c.classList.toggle('active', c.getAttribute('data-cat') === UI.notesCat));
+  },
+  'note-save'(pid){
+    const g = activeGame();
+    const txt = document.getElementById('note-txt');
+    if(!txt || !txt.value.trim()){ UI.toast('متن یادداشت خالی است'); return; }
+    addNote(g.id, pid, g.currentStageIndex, UI.notesCat, txt.value);
+    UI.closeSheet(); UI.render(); Actions['open-player'](pid);
+    UI.toast('یادداشت ثبت شد 📝');
+  },
+  'secret-add'(pid){
+    UI._sheetPlayer = pid;
+    UI.openSheet(
+      '<h3>🕶️ یادداشت محرمانه</h3>' +
+      '<label class="fl">متن محرمانه (فقط برای شما)</label>' +
+      '<textarea id="sec-txt" placeholder="مثلاً: امشب می‌خوام تارگت الکی بزنم بهش…"></textarea>' +
+      '<label class="fl">پیشنهاد گمراه‌سازی (اختیاری)</label>' +
+      '<textarea id="sec-sugg" placeholder="مثلاً: فردا یکی از شهروندها را به جای او متهم کن…"></textarea>' +
+      '<div class="btn-row" style="margin-top:12px">' +
+      '<button class="btn ghost" data-act="sheet-cancel">انصراف</button>' +
+      '<button class="btn purple" data-act="secret-save" data-id="' + pid + '">ذخیره محرمانه ✓</button>' +
+      '</div>'
+    );
+  },
+  'secret-save'(pid){
+    const txt = document.getElementById('sec-txt');
+    const sugg = document.getElementById('sec-sugg');
+    if(!txt || !txt.value.trim()){ UI.toast('متن محرمانه خالی است'); return; }
+    addSecretNote(pid, txt.value, sugg ? sugg.value : '');
+    UI.closeSheet(); UI.render(); Actions['open-player'](pid);
+    UI.toast('یادداشت محرمانه ذخیره شد 🕶️');
+  }
+});
+
+/* ---------- مدیریت بازی ---------- */
+Object.assign(Actions, {
+  'manage-game'(){
+    const g = activeGame(); if(!g) return;
+    const players = playersOf(g.id);
+    const H = [];
+    H.push('<h3>🎮 مدیریت بازی — ' + esc(g.name) + '</h3>');
+    H.push('<div class="btn-row"><button class="btn sm ghost" data-act="game-rename" data-id="' + g.id + '">✏️ تغییر نام بازی</button>' +
+      '<button class="btn sm ghost" data-act="game-dup" data-id="' + g.id + '">📄 کپی بازی</button></div>');
+    // سناریو
+    H.push('<label class="fl">🎭 سناریو (تعداد نقش‌ها)</label>' +
+      '<div class="btn-row" style="gap:6px">' +
+      '<span style="flex:1"><span class="tiny">شهروند</span><input type="number" id="mg-c" value="' + g.citizenCount + '" min="0" inputmode="numeric"></span>' +
+      '<span style="flex:1"><span class="tiny">مافیا</span><input type="number" id="mg-m" value="' + g.mafiaCount + '" min="1" inputmode="numeric"></span>' +
+      '<span style="flex:1"><span class="tiny">مستقل</span><input type="number" id="mg-i" value="' + g.independentCount + '" min="0" inputmode="numeric"></span>' +
+      '</div>' +
+      '<button class="btn sm block" style="margin-top:8px" data-act="scenario-save" data-id="' + g.id + '">ذخیره سناریو</button>');
+    // نقش شما
+    H.push('<label class="fl">👑 نقش شما در این بازی</label>' +
+      '<div class="btn-row" style="gap:6px">' +
+      '<select id="mg-owner" style="flex:2"><option value="">— هیچ‌کس —</option>' +
+      players.map(p => '<option value="' + p.id + '"' + (g.ownerId === p.id ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') + '</select>' +
+      '<select id="mg-role" style="flex:1.4">' +
+      [['CITIZEN','شهروند 🛡️'],['MAFIA','مافیا 🗡️'],['INDEPENDENT','مستقل 🎭']].map(r => '<option value="' + r[0] + '"' + (g.ownerRole === r[0] ? ' selected' : '') + '>' + r[1] + '</option>').join('') +
+      '</select></div>' +
+      '<button class="btn sm block" style="margin-top:8px" data-act="owner-save" data-id="' + g.id + '">ذخیره نقش</button>');
+    if(g.ownerRole === 'MAFIA') H.push('<div class="tiny" style="margin-top:4px">💡 یاران مافیا را با نگه‌داشتن انگشت روی صندلی هر بازیکن و دکمه «🗡️ تعیین به عنوان یار مافیا» مشخص کنید.</div>');
+    // لیست بازیکنان
+    H.push('<hr class="sep"><b style="color:var(--gold);font-size:13px">👥 بازیکنان (' + faNum(players.length) + ')</b>');
+    players.forEach((p, i) => {
+      H.push('<div class="row' + (p.isEliminated ? ' dead' : '') + '"><span class="r-name">' + faNum(i + 1) + '. ' + esc(p.name) + (p.isOwner ? ' 👑' : '') + (p.knownRole === 'MAFIA' && !p.isOwner ? ' 🗡️' : '') + '</span>' +
+        '<span class="r-side">' +
+        '<button class="iconbtn" data-act="pl-move2" data-id="' + p.id + '" data-dir="-1">▲</button>' +
+        '<button class="iconbtn" data-act="pl-move2" data-id="' + p.id + '" data-dir="1">▼</button>' +
+        '<button class="iconbtn' + (p.isEliminated ? ' gold' : '') + '" data-act="pl-elim2" data-id="' + p.id + '">' + (p.isEliminated ? '↩️' : '💀') + '</button>' +
+        '<button class="iconbtn" data-act="open-player" data-id="' + p.id + '">👤</button>' +
+        '</span></div>');
+    });
+    H.push('<button class="btn sm block ghost" style="margin-top:6px" data-act="add-player2" data-id="' + g.id + '">＋ افزودن بازیکن</button>');
+    H.push('<div class="btn-row" style="margin-top:14px"><button class="btn ghost" data-act="sheet-cancel">بستن</button>' +
+      '<button class="btn crimson-d" data-act="game-del" data-id="' + g.id + '">🗑 حذف کل بازی</button></div>');
+    UI.openSheet(H.join(''));
+  },
+  'pl-move2'(pid, el){ movePlayer(pid, Number(el.getAttribute('data-dir'))); UI.render(); Actions['manage-game'](); },
+  'pl-elim2'(pid){ toggleEliminated(pid); UI.render(); Actions['manage-game'](); },
+  'add-player2'(){
+    const g = activeGame();
+    UI.promptSheet('بازیکن جدید', 'نام بازیکن', '', 'افزودن', (val) => {
+      addPlayer(g.id, val); UI.closeSheet(); UI.render(); Actions['manage-game']();
+    });
+  },
+  'game-rename'(gid){
+    const g = db.games.find(x => x.id === gid); if(!g) return;
+    UI.promptSheet('تغییر نام بازی', 'نام جدید', g.name, 'ذخیره', (val) => {
+      renameGame(gid, val); UI.closeSheet(); UI.render(); Actions['manage-game']();
+    });
+  },
+  'game-dup'(gid){ duplicateGame(gid); UI.closeSheet(); UI.render(); UI.toast('کپی بازی ساخته و فعال شد 📄'); },
+  'game-del'(gid){
+    const g = db.games.find(x => x.id === gid); if(!g) return;
+    UI.confirmSheet('حذف بازی', 'بازی «' + esc(g.name) + '» با همه داده‌هایش برای همیشه حذف شود؟', 'حذف کن', () => {
+      deleteGame(gid); UI.closeSheet(); UI.render(); UI.toast('بازی حذف شد');
+    }, true);
+  },
+  'scenario-save'(gid){
+    const c = Math.max(0, Number(document.getElementById('mg-c').value) || 0);
+    const m = Math.max(1, Number(document.getElementById('mg-m').value) || 1);
+    const i = Math.max(0, Number(document.getElementById('mg-i').value) || 0);
+    setScenario(gid, c, m, i);
+    UI.render(); UI.toast('سناریو ذخیره شد 🎭');
+  },
+  'owner-save'(gid){
+    const ov = document.getElementById('mg-owner').value;
+    const role = document.getElementById('mg-role').value;
+    setOwnerAndRole(gid, ov ? Number(ov) : null, role);
+    UI.render(); Actions['manage-game']();
+    UI.toast('نقش شما ذخیره شد 👑');
+  },
+
+  /* ---------- ساخت بازی جدید ---------- */
+  'new-game'(){
+    UI.openSheet(
+      '<h3>🎭 بازی جدید</h3>' +
+      '<label class="fl">نام بازی (اختیاری)</label>' +
+      '<input type="text" id="ng-name" placeholder="مثلاً: دورهمی پنج‌شنبه">' +
+      '<label class="fl">نام بازیکنان (هر کدام در یک خط)</label>' +
+      '<textarea id="ng-players" style="min-height:130px" placeholder="قاسم&#10;رضا&#10;مهدی&#10;…"></textarea>' +
+      '<label class="fl">👑 شما کدام بازیکن هستید؟</label>' +
+      '<div class="btn-row" style="gap:6px">' +
+      '<input type="number" id="ng-owner" min="0" placeholder="شماره (از ۱)" inputmode="numeric" style="flex:1">' +
+      '<select id="ng-role" style="flex:1.6"><option value="CITIZEN">شهروند 🛡️</option><option value="MAFIA">مافیا 🗡️</option><option value="INDEPENDENT">مستقل 🎭</option></select>' +
+      '</div>' +
+      '<div id="ng-mates-wrap" style="display:none"><label class="fl">🗡️ شماره یاران مافیا (با ویرگول، مثلاً ۳,۵)</label>' +
+      '<input type="text" id="ng-mates" class="ltr" placeholder="3,5" inputmode="numeric"></div>' +
+      '<label class="fl">🎭 سناریو (اختیاری — خالی = خودکار)</label>' +
+      '<div class="btn-row" style="gap:6px">' +
+      '<input type="number" id="ng-c" min="0" placeholder="شهروند" inputmode="numeric" style="flex:1">' +
+      '<input type="number" id="ng-m" min="0" placeholder="مافیا" inputmode="numeric" style="flex:1">' +
+      '<input type="number" id="ng-i" min="0" placeholder="مستقل" inputmode="numeric" style="flex:1">' +
+      '</div>' +
+      '<div class="btn-row" style="margin-top:14px">' +
+      '<button class="btn ghost" data-act="sheet-cancel">انصراف</button>' +
+      '<button class="btn crimson" data-act="game-create">ساخت بازی ✓</button>' +
+      '</div>'
+    );
+    const roleSel = document.getElementById('ng-role');
+    if(roleSel) roleSel.addEventListener('change', () => {
+      document.getElementById('ng-mates-wrap').style.display = roleSel.value === 'MAFIA' ? 'block' : 'none';
+    });
+  },
+  'game-create'(){
+    const name = document.getElementById('ng-name').value;
+    const lines = document.getElementById('ng-players').value.split('\n');
+    const ownerNum = Number(document.getElementById('ng-owner').value) || 0;
+    const role = document.getElementById('ng-role').value;
+    const matesRaw = document.getElementById('ng-mates').value || '';
+    const mateIndices = matesRaw.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).split(/[,،\s]+/).map(s => Number(s.trim()) - 1).filter(x => x >= 0);
+    const opts = {
+      ownerRole: role,
+      ownerIndex: ownerNum >= 1 ? ownerNum - 1 : null,
+      mateIndices: role === 'MAFIA' ? mateIndices : [],
+      citizenCount: Number(document.getElementById('ng-c').value) || 0,
+      mafiaCount: Number(document.getElementById('ng-m').value) || 0,
+      independentCount: Number(document.getElementById('ng-i').value) || 0
+    };
+    if(!lines.some(l => l.trim())){ UI.toast('حداقل یک نام بازیکن وارد کنید'); return; }
+    const gid = createGame(name, lines, opts);
+    if(gid){
+      UI.closeSheet();
+      UI.selSource = null; UI.pendingTargets = null; UI.reportStage = 0; UI.voteStage = 0;
+      UI.go('table');
+      UI.toast('بازی «' + (name.trim() || 'بازی جدید مافیا') + '» ساخته شد 🎭');
+    }
+  },
+  'sample-game'(){
+    createSampleGame();
+    UI.selSource = null; UI.pendingTargets = null; UI.reportStage = 0; UI.voteStage = 0;
+    UI.go('table');
+    UI.toast('بازی نمونه ۸ نفره ساخته شد — امتحانش کنید! 🎭');
+  }
+});
+
+/* ============================================================
+   ابزارها: کپی، دانلود، شبکه
+   ============================================================ */
+UI.analysis = null;
+UI.weightsDraft = null;
+UI.weightsDraftGid = null;
+
+function legacyCopy(txt){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){ return false; }
+}
+function copyText(txt){
+  if(navigator.clipboard && navigator.clipboard.writeText)
+    return navigator.clipboard.writeText(txt).then(() => true).catch(() => legacyCopy(txt));
+  return Promise.resolve(legacyCopy(txt));
+}
+function downloadFile(name, content, mime){
+  const blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+}
+function scrollChat(){
+  setTimeout(() => { const cb = document.getElementById('chat-box'); if(cb) cb.scrollTop = cb.scrollHeight; }, 60);
+}
+function httpHint(status, msg){
+  if(status === 401) return 'کلید API نامعتبر یا رد شد (۴۰۱). کلید را بررسی کنید.';
+  if(status === 403) return 'دسترسی ممنوع (۴۰۳). احتمالاً کلید محدود شده یا سرویس‌دهنده اجازه درخواست از مرورگر (CORS) را نمی‌دهد.';
+  if(status === 404) return 'آدرس یا نام مدل پیدا نشد (۴۰۴). Base URL و مدل را بررسی کنید.';
+  if(status === 429) return 'محدودیت نرخ درخواست (۴۲۹). کمی صبر کنید و دوباره امتحان کنید.';
+  if(status >= 500) return 'خطای سمت سرور (' + status + '). سرویس موقتاً در دسترس نیست.';
+  return msg ? String(msg) : 'خطای HTTP ' + status;
+}
+async function callChat(messages){
+  const base = String(db.ai.baseUrl || '').replace(/\/+$/, '');
+  if(!base) throw new Error('Base URL تنظیم نشده است.');
+  let res;
+  try{
+    res = await fetch(base + '/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + db.ai.apiKey },
+      body: JSON.stringify({ model: db.ai.model, messages, temperature: Number(db.ai.temperature) || 0.4, stream: false })
+    });
+  }catch(e){
+    throw new Error('اتصال برقرار نشد — اینترنت یا CORS را بررسی کنید. بقیه برنامه کاملاً آفلاین کار می‌کند؛ فعلاً از «تحلیل محلی» استفاده کنید. (' + e.message + ')');
+  }
+  if(!res.ok){
+    let msg = '';
+    try{ const j = await res.json(); msg = (j.error && (j.error.message || j.error)) || j.message || ''; }catch(e){}
+    throw new Error(httpHint(res.status, msg));
+  }
+  const j = await res.json();
+  const content = j.choices && j.choices[0] ? ((j.choices[0].message && j.choices[0].message.content) || j.choices[0].text) : null;
+  if(content == null || !String(content).trim()) throw new Error('پاسخ خالی از سرور دریافت شد.');
+  return String(content);
+}
+
+/* ============================================================
+   تب گزارش‌ها
+   ============================================================ */
+Object.assign(UI, {
+  renderReports(){
+    const g = activeGame();
+    let stage = UI.reportStage == null ? g.currentStageIndex : UI.reportStage;
+    stage = Math.min(stage, g.maxUnlockedStageIndex);
+    UI.reportStage = stage;
+    const scores = Core.analyzeGame(g.id, stage);
+    const players = playersOf(g.id);
+    const H = [];
+
+    H.push('<div class="chips">');
+    for(let i = 0; i <= g.maxUnlockedStageIndex; i++)
+      H.push('<button class="chip' + (i === stage ? ' active' : '') + '" data-act="report-stage" data-id="' + i + '">' + stageTitle(i) + '</button>');
+    H.push('</div>');
+
+    /* --- رتبه‌بندی --- */
+    H.push('<div class="card"><h3>🏆 رتبه‌بندی سوءظن — ' + stageTitle(stage) + '</h3>' +
+      '<div class="sub">' + faNum(scores.length) + ' بازیکن ارزیابی شد • برای دیدن دلایل، روی «چرا؟» بزنید</div>');
+    scores.forEach((s, i) => {
+      const badge = (s.isOwner ? ' 👑' : '') + (s.knownRole === 'MAFIA' && !s.isOwner ? ' 🗡️' : '') + (s.isEliminated ? ' 💀' : '');
+      H.push('<div class="row' + (s.isEliminated ? ' dead' : '') + '" style="margin-bottom:2px">' +
+        '<span style="font-weight:800;color:var(--txt3);min-width:18px">' + faNum(i + 1) + '</span>' +
+        '<span class="r-name">' + esc(s.playerName) + badge + '</span>' +
+        '<span class="score-badge" style="color:' + UI.scoreColor(s.totalScore) + ';border-color:' + UI.scoreColor(s.totalScore) + '">' + faNum(s.totalScore) + '٪</span></div>');
+      const factors = s.positiveFactors.filter(f => f.points !== 0).concat(s.negativeFactors.filter(f => f.points !== 0));
+      H.push('<details class="factors-d" style="margin:0 0 10px"><summary>چرا ' + esc(s.playerName) + '؟ ▾</summary>' +
+        '<div style="padding:4px 2px 0"><span class="status-chip ' + (s.totalScore >= 66 ? 'st-warn' : 'st-ok') + '">' + esc(s.statusLabel) + '</span>' +
+        '<div class="kv" style="margin-top:6px"><span>تارگت زده <b>' + faNum(s.totalTargetsMade) + '</b> (یونیک ' + faNum(s.uniqueTargetsCount) + ') • دریافتی <b>' + faNum(s.targetsReceivedCount) + '</b> • نوسان <b>' + faNum(s.targetFlipsCount) + '</b></span></div>' +
+        '<div class="kv"><span>رأی داده <b>' + faNum(s.votesCastCount) + '</b> • رأی دریافتی <b>' + faNum(s.votesReceivedCount) + '</b> • یادداشت مشکوک <b>' + faNum(s.suspiciousNotesCount) + '</b> • دستی <b>' + faNum(s.manualScore) + '</b></span></div>' +
+        (factors.length ? factors.map(f => '<div class="factor ' + (f.isSuspicious ? 'pos' : 'neg') + '"><div class="f-head"><span>' + esc(f.title) + '</span><span>' + (f.points > 0 ? '+' : '') + faNum(f.points) + '</span></div><div class="f-desc">' + esc(f.description) + '</div></div>').join('') : '<div class="tiny" style="margin-top:6px">عامل مؤثری ثبت نشده — امتیاز پایه ۵۰ بدون تغییر خاصی مانده است.</div>') +
+        '</div></details>');
+    });
+    H.push('</div>');
+
+    /* --- نمودار روند --- */
+    H.push('<div class="card"><h3 class="purple">📈 نمودار روند سوءظن</h3>');
+    if(stage >= 1){
+      const W = 320, HT = 150, L = 26, R = 8, T = 8, B = 22;
+      const maxStage = Math.max(1, stage);
+      const X = st => L + st * (W - L - R) / maxStage;
+      const Y = sc => T + (100 - sc) * (HT - T - B) / 100;
+      H.push('<svg viewBox="0 0 ' + W + ' ' + HT + '" style="width:100%;height:auto;direction:ltr">');
+      [0, 50, 100].forEach(sc => {
+        H.push('<line x1="' + L + '" y1="' + Y(sc) + '" x2="' + (W - R) + '" y2="' + Y(sc) + '" stroke="#373E4F" stroke-width="0.6" stroke-dasharray="3,3"/>');
+        H.push('<text x="' + (L - 4) + '" y="' + (Y(sc) + 3) + '" fill="#6B7280" font-size="8" text-anchor="end">' + faNum(sc) + '</text>');
+      });
+      for(let i = 0; i <= maxStage; i++)
+        H.push('<text x="' + X(i) + '" y="' + (HT - 8) + '" fill="#6B7280" font-size="7.5" text-anchor="middle">' + stageTitle(i) + '</text>');
+      scores.forEach(s => {
+        const pi = players.findIndex(p => p.id === s.playerId);
+        const color = LINE_COLORS[pi % LINE_COLORS.length];
+        const pts = s.stageTrendScores.map(t => X(t.stage).toFixed(1) + ',' + Y(t.score).toFixed(1)).join(' ');
+        H.push('<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>');
+        const last = s.stageTrendScores[s.stageTrendScores.length - 1];
+        H.push('<circle cx="' + X(last.stage).toFixed(1) + '" cy="' + Y(last.score).toFixed(1) + '" r="2.2" fill="' + color + '"/>');
+      });
+      H.push('</svg><div class="chart-legend">');
+      scores.forEach(s => {
+        const pi = players.findIndex(p => p.id === s.playerId);
+        H.push('<span class="lg-item"><span class="lg-dot" style="background:' + LINE_COLORS[pi % LINE_COLORS.length] + '"></span>' + esc(s.playerName) + '</span>');
+      });
+      H.push('</div>');
+    } else {
+      H.push('<div class="tiny">پس از پایان «معارفه» و رفتن به روز ۱، نمودار روند نمایش داده می‌شود.</div>');
+    }
+    H.push('</div>');
+
+    /* --- مربی نطق --- */
+    const guide = Core.speechGuide(g.id, stage);
+    H.push('<div class="card"><h3 class="green">🗣 چی بگم؟ مربی نطق — ' + stageTitle(stage) + '</h3>');
+    if(!players.some(p => p.isOwner)){
+      H.push('<div class="sub">⚠️ هنوز تعیین نکرده‌اید که خودتان کدام بازیکن هستید. از «🎮 مدیریت بازی» در تب میز بازی، نقش و بازیکن خودتان را مشخص کنید تا نطق دقیق‌تری بسازیم.</div>');
+    }
+    H.push('<div class="speech-block"><div class="s-title">🎤 قلاب شروع (اول چی بگم؟)</div>' + esc(guide.openingHook) + '</div>');
+    H.push('<div class="speech-block"><div class="s-title">🎯 تحلیل الگوی تارگت‌ها</div>' + esc(guide.targetPatternAnalysis) + '</div>');
+    if(guide.topSuspectsAdvice.length){
+      H.push('<div class="speech-block"><div class="s-title">😠 مظنونین و نحوه صحبت درباره‌شان</div>' +
+        guide.topSuspectsAdvice.map(t => '<b>' + esc(t.playerName) + '</b> (' + faNum(t.suspicionScore) + '٪)' + (t.isTeammate ? ' — <span style="color:var(--crimson-l)">یار تیم شما!</span>' : '') + '<br>' + esc(t.colloquialArgument) + '<br>').join('') + '</div>');
+    }
+    H.push('<details class="factors-d"><summary>📌 تحلیل یادداشت‌های شما (' + faNum(guide.userNotesInsights.length) + ') ▾</summary>' +
+      guide.userNotesInsights.map(x => '<div class="tiny" style="margin-top:5px">' + esc(x) + '</div>').join('') + '</details>');
+    if(guide.mafiaTeammatesInfo){
+      const mg = guide.mafiaTeammatesInfo;
+      H.push('<div class="speech-block" style="border-color:rgba(229,57,53,.5)"><div class="s-title">🗡️ راهنمای یاران مافیا</div>' +
+        esc(mg.tacticalCoveringAdvice) +
+        (mg.safeTargetsToPush.length ? '<br><span class="tiny">طعمه‌های امن برای پوش: ' + esc(mg.safeTargetsToPush.join('، ')) + '</span>' : '') + '</div>');
+    }
+    H.push('<details class="factors-d"><summary>🛡 استراتژی ویژه نقش شما ▾</summary>' +
+      guide.roleSpecificStrategy.map(x => '<div class="tiny" style="margin-top:5px">' + esc(x) + '</div>').join('') + '</details>');
+    H.push('<div class="speech-block"><div class="s-title">📜 متن کامل نطق (آماده اجرا دور میز)</div>' + esc(guide.fullColloquialSpeechText) + '</div>');
+    H.push('<div class="btn-row" style="margin-top:8px">' +
+      '<button class="btn sm green" data-act="copy-speech">📋 کپی متن کامل نطق</button>' +
+      '<button class="btn sm ghost" data-act="copy-keypoints">📋 کپی نکات کلیدی</button></div>');
+    H.push('</div>');
+
+    /* --- گزارش اشتراک‌گذاری --- */
+    const report = Core.buildShareReport(g.id, stage);
+    H.push('<div class="card"><h3>📤 گزارش اشتراک‌گذاری</h3>' +
+      '<div class="sub">خلاصه کامل وضعیت برای فرستادن در چت گروه</div>' +
+      '<div class="analysis-box" style="max-height:170px;overflow:auto;font-size:11.5px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px">' + esc(report) + '</div>' +
+      '<div class="btn-row" style="margin-top:8px">' +
+      '<button class="btn sm crimson" data-act="share-report">📤 اشتراک</button>' +
+      '<button class="btn sm ghost" data-act="copy-report">📋 کپی گزارش</button></div></div>');
+
+    /* --- تحلیل هوشمند --- */
+    H.push('<div class="card"><h3 class="purple">🤖 تحلیل هوشمند</h3>' +
+      '<div class="sub">با کلید API (اینترنت لازم است) یا کاملاً آفلاین با تحلیلگر محلی</div>');
+    if(UI.aiBusy === 'analyze') H.push('<div style="text-align:center;padding:14px"><span class="spin"></span><div class="tiny" style="margin-top:6px">در حال دریافت تحلیل از مدل…</div></div>');
+    if(UI.analysis && UI.analysis.text){
+      H.push('<div style="margin-bottom:6px"><span class="status-chip st-ok">' + esc(UI.analysis.label) + '</span></div>' +
+        '<div class="analysis-box" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:340px;overflow:auto">' + esc(UI.analysis.text) + '</div>' +
+        '<button class="btn sm ghost block" style="margin-top:8px" data-act="copy-analysis">📋 کپی تحلیل</button>');
+    }
+    H.push('<div class="btn-row" style="margin-top:8px">' +
+      '<button class="btn sm purple" data-act="ai-analyze"' + (UI.aiBusy ? ' disabled' : '') + '>🤖 تحلیل با AI</button>' +
+      '<button class="btn sm ghost" data-act="local-analyze"' + (UI.aiBusy ? ' disabled' : '') + '>🧠 تحلیل محلی (آفلاین)</button></div>');
+    H.push('</div>');
+    return H.join('');
+  }
+});
+
+Object.assign(Actions, {
+  'report-stage'(i){ UI.reportStage = i; UI.render(); },
+  'copy-speech'(){
+    const g = activeGame();
+    const guide = Core.speechGuide(g.id, Math.min(UI.reportStage, g.maxUnlockedStageIndex));
+    copyText(guide.fullColloquialSpeechText).then(ok => UI.toast(ok ? 'متن کامل نطق کپی شد 📋' : 'کپی ناموفق بود'));
+  },
+  'copy-keypoints'(){
+    const g = activeGame();
+    const guide = Core.speechGuide(g.id, Math.min(UI.reportStage, g.maxUnlockedStageIndex));
+    copyText(guide.keyTalkingPoints.join('\n')).then(ok => UI.toast(ok ? 'نکات کلیدی کپی شد 📋' : 'کپی ناموفق بود'));
+  },
+  'share-report'(){
+    const g = activeGame();
+    const txt = Core.buildShareReport(g.id, Math.min(UI.reportStage, g.maxUnlockedStageIndex));
+    if(navigator.share){
+      navigator.share({ text: txt }).catch(() => { copyText(txt).then(ok => UI.toast(ok ? 'گزارش کپی شد (اشتراک لغو شد)' : 'کپی ناموفق بود')); });
+    } else copyText(txt).then(ok => UI.toast(ok ? 'اشتراک سریع در این مرورگر نیست — گزارش کپی شد 📋' : 'کپی ناموفق بود'));
+  },
+  'copy-report'(){
+    const g = activeGame();
+    copyText(Core.buildShareReport(g.id, Math.min(UI.reportStage, g.maxUnlockedStageIndex))).then(ok => UI.toast(ok ? 'گزارش کپی شد 📋' : 'کپی ناموفق بود'));
+  },
+  'copy-analysis'(){
+    if(UI.analysis) copyText(UI.analysis.text).then(ok => UI.toast(ok ? 'تحلیل کپی شد 📋' : 'کپی ناموفق بود'));
+  },
+  'local-analyze'(){
+    const g = activeGame();
+    UI.analysis = { text: Core.localAnalysis(g.id, Math.min(UI.reportStage, g.maxUnlockedStageIndex)), label: 'تحلیلگر محلی (آفلاین)' };
+    UI.render();
+    UI.toast('تحلیل محلی آماده شد 🧠');
+  },
+  async 'ai-analyze'(){
+    const g = activeGame();
+    if(UI.aiBusy) return;
+    const stage = Math.min(UI.reportStage, g.maxUnlockedStageIndex);
+    if(!db.ai.apiKey || !db.ai.model){
+      UI.analysis = { text: Core.localAnalysis(g.id, stage), label: 'تحلیلگر محلی (آفلاین)' };
+      UI.render();
+      UI.toast('کلید API یا مدل تنظیم نشده — تحلیل محلی نمایش داده شد. برای AI به تنظیمات ▸ هوش مصنوعی بروید.');
+      return;
+    }
+    UI.aiBusy = 'analyze'; UI.render();
+    try{
+      const content = await callChat([
+        { role: 'system', content: 'تو یک تحلیل‌گر حرفه‌ای بازی مافیا هستی. همیشه به فارسی روان و خودمانی پاسخ بده و دقیقاً طبق ساختار درخواستی کاربر خروجی بده.' },
+        { role: 'user', content: Core.buildAiPrompt(g.id, stage) }
+      ]);
+      UI.analysis = { text: content, label: 'مدل ' + db.ai.model };
+      UI.toast('تحلیل هوشمند آماده شد ✓');
+    }catch(e){
+      UI.analysis = { text: Core.localAnalysis(g.id, stage), label: 'تحلیلگر محلی (آفلاین)' };
+      UI.toast('⚠️ ' + e.message + ' — تحلیل محلی نمایش داده شد.');
+    }
+    UI.aiBusy = null; UI.render();
+  }
+});
+
+/* ============================================================
+   تب تنظیمات
+   ============================================================ */
+Object.assign(UI, {
+  renderSettings(){
+    const H = [];
+    H.push('<div class="sec-tabs">' +
+      [['games','🎮 بازی‌ها'],['weights','⚖️ ضرایب'],['ai','🤖 هوش مصنوعی'],['data','💾 داده‌ها']].map(s =>
+      '<button class="sec-tab' + (this.section === s[0] ? ' active' : '') + '" data-act="set-section" data-sec="' + s[0] + '">' + s[1] + '</button>').join('') +
+      '</div>');
+    if(this.section === 'games') H.push(this.settingsGames());
+    else if(this.section === 'weights') H.push(this.settingsWeights());
+    else if(this.section === 'ai') H.push(this.settingsAi());
+    else H.push(this.settingsData());
+    return H.join('');
+  },
+
+  settingsGames(){
+    const games = sortedGames();
+    const H = [];
+    H.push('<div class="card"><h3>🎮 بازی‌های شما</h3><div class="sub">' + faNum(games.length) + ' بازی ذخیره‌شده روی همین گوشی</div>');
+    if(!games.length) H.push('<div class="empty" style="padding:16px"><div class="big">🎭</div>هنوز بازی ندارید!</div>');
+    games.forEach(g => {
+      const pc = playersOf(g.id).length;
+      const d = new Date(g.updatedAt).toLocaleDateString('fa-IR');
+      H.push('<div class="game-item' + (g.id === db.activeGameId ? ' active-game' : '') + '">' +
+        '<span class="g-name">' + esc(g.name) + '<br><span class="tiny">' + faNum(pc) + ' بازیکن • ' + stageTitle(g.currentStageIndex) + ' • ' + d + '</span></span>' +
+        '<button class="btn sm ' + (g.id === db.activeGameId ? 'gold' : 'ghost') + '" data-act="select-game" data-id="' + g.id + '">' + (g.id === db.activeGameId ? 'فعال ✓' : 'انتخاب') + '</button>' +
+        '<button class="iconbtn" data-act="game-open-manage" data-id="' + g.id + '">🎮</button>' +
+        '<button class="iconbtn red" data-act="game-del-list" data-id="' + g.id + '">🗑</button>' +
+        '</div>');
+    });
+    H.push('<div class="btn-row" style="margin-top:10px">' +
+      '<button class="btn crimson" data-act="new-game">＋ بازی جدید</button>' +
+      '<button class="btn ghost" data-act="sample-game">🎲 بازی نمونه</button></div></div>');
+    return H.join('');
+  },
+
+  settingsWeights(){
+    const g = activeGame();
+    if(!g) return '<div class="empty"><div class="big">⚖️</div>ابتدا یک بازی را فعال کنید</div>';
+    if(!this.weightsDraft || this.weightsDraftGid !== g.id){
+      this.weightsDraft = weightsOf(g.id);
+      this.weightsDraftGid = g.id;
+    }
+    const W = [
+      ['manual','🖐 سوءظن دستی کاربر'],
+      ['suspNote','📝 یادداشت‌های رفتار مشکوک'],
+      ['spread','🎯 پراکندگی تارگت‌ها'],
+      ['flip','🔄 نوسان و چرخش تارگت‌ها'],
+      ['votes','🗳 رأی‌های خروج دریافتی']
+    ];
+    const H = [];
+    H.push('<div class="card"><h3>⚖️ ضرایب الگوریتم — ' + esc(g.name) + '</h3>' +
+      '<div class="sub">میزان اثر هر عامل روی امتیاز سوءظن (۵ تا ۶۰٪). الگوریتم کاملاً شفاف است: امتیاز پایه ۵۰ + عوامل مثبت − عوامل منفی.</div>');
+    W.forEach(w => {
+      const k = w[0], pct = Math.round(this.weightsDraft[k] * 100);
+      H.push('<label class="fl">' + w[1] + '</label>' +
+        '<div class="inline-range"><input type="range" min="5" max="60" step="5" value="' + pct + '" data-inp="weight-live" data-key="' + k + '"><span class="rv" id="wv-' + k + '">' + faNum(pct) + '٪</span></div>');
+    });
+    H.push('<div class="btn-row" style="margin-top:14px">' +
+      '<button class="btn crimson" data-act="weights-save">ذخیره ضرایب ✓</button>' +
+      '<button class="btn ghost" data-act="weights-reset">بازگشت به پیش‌فرض</button></div></div>');
+    return H.join('');
+  },
+
+  settingsAi(){
+    const ai = db.ai;
+    const H = [];
+    H.push('<div class="card"><h3 class="purple">🤖 اتصال به سرویس هوش مصنوعی</h3>' +
+      '<div class="sub">پیش‌فرض: روتر 9router — فقط کلید API خود را وارد کنید. این بخش به اینترنت نیاز دارد؛ بقیه برنامه کاملاً آفلاین کار می‌کند.</div>' +
+      '<label class="fl">Base URL</label>' +
+      '<input type="url" id="ai-base" class="ltr" value="' + esc(ai.baseUrl) + '" placeholder="https://…/v1">' +
+      '<label class="fl">API Key</label>' +
+      '<input type="password" id="ai-key" class="ltr" value="' + esc(ai.apiKey) + '" placeholder="sk-…">' +
+      '<label class="fl">مدل</label>' +
+      '<input type="text" id="ai-model" class="ltr" list="model-list" value="' + esc(ai.model) + '" placeholder="مثلاً gpt-4o-mini">' +
+      '<datalist id="model-list">' + this.models.map(m => '<option value="' + esc(m) + '"></option>').join('') + '</datalist>' +
+      '<div class="btn-row" style="margin-top:8px">' +
+      '<button class="btn sm ghost" data-act="ai-models"' + (this.modelsLoading ? ' disabled' : '') + '>' + (this.modelsLoading ? '<span class="spin"></span> در حال دریافت…' : '🔄 دریافت لیست مدل‌ها') + '</button>' +
+      (this.models.length ? '<span class="tiny" style="align-self:center">' + faNum(this.models.length) + ' مدل دریافت شد — روی فیلد مدل بزنید تا لیست باز شود</span>' : '') +
+      '</div>' +
+      '<label class="fl">دمای پاسخ: <b id="temp-val">' + ai.temperature + '</b></label>' +
+      '<input type="range" min="0" max="1" step="0.05" value="' + ai.temperature + '" data-inp="temp-live">' +
+      '<button class="btn block crimson" style="margin-top:12px" data-act="ai-save">ذخیره تنظیمات AI ✓</button></div>');
+    const bubbles = this.chat.map(m => '<div class="bubble ' + (m.role === 'user' ? 'me' : m.role === 'err' ? 'err' : 'ai') + '">' + esc(m.content) + '</div>').join('');
+    H.push('<div class="card"><h3 class="green">💬 چت تست</h3>' +
+      '<div class="sub">برای اطمینان از اتصال، یک پیام بفرستید</div>' +
+      '<div id="chat-box">' + (bubbles || '<div class="tiny" style="text-align:center;padding:10px">هنوز پیامی رد و بدل نشده</div>') +
+      (this.aiBusy === 'chat' ? '<div class="bubble typing"><span class="spin"></span> در حال تایپ…</div>' : '') + '</div>' +
+      '<div class="btn-row" style="gap:6px">' +
+      '<input type="text" id="chat-in" placeholder="مثلاً: سلام، آماده‌ای؟" style="flex:3">' +
+      '<button class="btn crimson" style="flex:1" data-act="chat-send"' + (this.aiBusy ? ' disabled' : '') + '>ارسال ⇐</button></div></div>');
+    return H.join('');
+  },
+
+  settingsData(){
+    const H = [];
+    H.push('<div class="card"><h3>💾 داده‌ها و پشتیبان</h3>' +
+      '<div class="sub">همه داده‌ها فقط روی همین گوشی (localStorage) ذخیره می‌شوند — هیچ سروری در کار نیست.</div>' +
+      '<div class="kv"><span>بازی‌ها</span><b>' + faNum(db.games.length) + '</b></div>' +
+      '<div class="kv"><span>بازیکنان</span><b>' + faNum(db.players.length) + '</b></div>' +
+      '<div class="kv"><span>یادداشت‌ها</span><b>' + faNum(db.notes.length) + '</b></div>' +
+      '<div class="kv"><span>تارگت‌ها</span><b>' + faNum(db.targets.length) + '</b></div>' +
+      '<div class="kv"><span>رأی‌ها</span><b>' + faNum(db.votes.length) + '</b></div>' +
+      '<div class="btn-row" style="margin-top:12px">' +
+      '<button class="btn ghost" data-act="export-json">📤 پشتیبان JSON</button>' +
+      '<button class="btn ghost" data-act="import-pick">📥 بازیابی پشتیبان</button>' +
+      '</div>' +
+      '<input type="file" id="import-file" data-act="import-file" accept=".json,application/json" style="display:none">' +
+      '<hr class="sep">' +
+      '<div style="font-weight:800;color:var(--gold);font-size:13px;margin-bottom:4px">📱 نسخه آفلاین برای گوشی</div>' +
+      '<div class="sub" style="margin-bottom:8px">با این دکمه، کل برنامه به صورت یک فایل HTML مستقل دانلود می‌شود. آن فایل را روی گوشی باز کنید — بدون اینترنت و بدون نصب، همه‌چیز کار می‌کند و داده‌هایتان هم روی خود گوشی می‌ماند.</div>' +
+      '<button class="btn block gold" data-act="download-html">⬇️ دانلود فایل HTML آفلاین برنامه</button>' +
+      '<hr class="sep">' +
+      '<button class="btn block crimson-d" data-act="wipe-all">🗑 پاک کردن همه داده‌ها</button>' +
+      '</div>');
+    return H.join('');
+  }
+});
+
+Object.assign(Actions, {
+  'set-section'(id, el){ UI.section = el.getAttribute('data-sec'); UI.render(); },
+  'select-game'(gid){
+    selectGame(gid);
+    const g = db.games.find(x => x.id === gid);
+    UI.voteStage = g.currentStageIndex;
+    UI.reportStage = g.currentStageIndex;
+    UI.render();
+    UI.toast('بازی «' + g.name + '» فعال شد 🎮');
+  },
+  'game-open-manage'(gid){ selectGame(gid); UI.render(); Actions['manage-game'](); },
+  'game-del-list'(gid){
+    const g = db.games.find(x => x.id === gid); if(!g) return;
+    UI.confirmSheet('حذف بازی', 'بازی «' + esc(g.name) + '» با همه داده‌هایش برای همیشه حذف شود؟', 'حذف کن', () => {
+      deleteGame(gid); UI.closeSheet(); UI.render(); UI.toast('بازی حذف شد');
+    }, true);
+  },
+
+  /* --- ضرایب --- */
+  'weight-live'(id, el){
+    const k = el.getAttribute('data-key');
+    UI.weightsDraft[k] = Number(el.value) / 100;
+    const lbl = document.getElementById('wv-' + k);
+    if(lbl) lbl.textContent = faNum(el.value) + '٪';
+  },
+  'weights-save'(){
+    const g = activeGame(); if(!g || !UI.weightsDraft) return;
+    saveWeights(g.id, UI.weightsDraft);
+    UI.toast('ضرایب ذخیره شد و تحلیل‌ها به‌روز شدند ⚖️');
+    UI.render();
+  },
+  'weights-reset'(){
+    const g = activeGame(); if(!g) return;
+    UI.weightsDraft = Object.assign({}, DEFAULT_WEIGHTS);
+    saveWeights(g.id, UI.weightsDraft);
+    UI.toast('ضرایب به حالت پیش‌فرض برگشت');
+    UI.render();
+  },
+
+  /* --- هوش مصنوعی --- */
+  'ai-save'(){
+    const b = document.getElementById('ai-base'), k = document.getElementById('ai-key'), m = document.getElementById('ai-model');
+    db.ai.baseUrl = (b.value || '').trim() || DEFAULT_AI_BASE_URL;
+    db.ai.apiKey = (k.value || '').trim();
+    db.ai.model = (m.value || '').trim();
+    persist();
+    UI.toast('تنظیمات AI ذخیره شد ✓');
+  },
+  async 'ai-models'(){
+    if(UI.modelsLoading) return;
+    const b = document.getElementById('ai-base'), k = document.getElementById('ai-key');
+    if(b && k){ db.ai.baseUrl = (b.value || '').trim(); db.ai.apiKey = (k.value || '').trim(); persist(); }
+    const base = String(db.ai.baseUrl || '').replace(/\/+$/, '');
+    if(!base || !db.ai.apiKey){ UI.toast('ابتدا Base URL و کلید API را وارد کنید'); return; }
+    UI.modelsLoading = true; UI.render();
+    try{
+      let res;
+      try{
+        res = await fetch(base + '/models', { headers: { 'Authorization': 'Bearer ' + db.ai.apiKey } });
+      }catch(e){
+        throw new Error('اتصال برقرار نشد — اینترنت یا CORS را بررسی کنید. (' + e.message + ')');
+      }
+      if(!res.ok) throw new Error(httpHint(res.status));
+      const j = await res.json();
+      let list = [];
+      if(Array.isArray(j)) list = j;
+      else if(j && Array.isArray(j.data)) list = j.data;
+      else if(j && j.id) list = [j];
+      UI.models = list.map(m => typeof m === 'string' ? m : (m.id || m.name)).filter(Boolean);
+      if(UI.models.length) UI.toast('✓ ' + faNum(UI.models.length) + ' مدل دریافت شد — روی فیلد «مدل» بزنید و از لیست انتخاب کنید');
+      else UI.toast('سرور پاسخی داد ولی لیست مدل خالی بود');
+    }catch(e){
+      UI.toast('⚠️ دریافت مدل‌ها ناموفق: ' + e.message);
+    }
+    UI.modelsLoading = false; UI.render();
+  },
+  async 'chat-send'(){
+    const inp = document.getElementById('chat-in');
+    const txt = inp ? String(inp.value).trim() : '';
+    if(!txt){ UI.toast('پیامی بنویسید'); return; }
+    if(UI.aiBusy) return;
+    if(!db.ai.apiKey || !db.ai.model){
+      UI.chat.push({ role: 'err', content: '⚙️ ابتدا Base URL، کلید API و مدل را وارد و ذخیره کنید.' });
+      UI.render(); scrollChat(); return;
+    }
+    UI.chat.push({ role: 'user', content: txt });
+    UI.aiBusy = 'chat'; UI.render(); scrollChat();
+    try{
+      const msgs = [{ role: 'system', content: 'تو دستیار تحلیل بازی مافیا هستی. به فارسی روان و کوتاه پاسخ بده.' }];
+      UI.chat.forEach(m => { if(m.role === 'user' || m.role === 'assistant') msgs.push({ role: m.role, content: m.content }); });
+      const reply = await callChat(msgs);
+      UI.chat.push({ role: 'assistant', content: reply });
+    }catch(e){
+      UI.chat.push({ role: 'err', content: '❌ ' + e.message });
+    }
+    UI.aiBusy = null; UI.render(); scrollChat();
+  },
+  'temp-live'(id, el){
+    const lbl = document.getElementById('temp-val');
+    if(lbl) lbl.textContent = el.value;
+  },
+
+  /* --- داده‌ها --- */
+  'export-json'(){
+    const name = 'mafia-analyzer-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    downloadFile(name, JSON.stringify(db, null, 2), 'application/json');
+    UI.toast('فایل پشتیبان دانلود شد 💾');
+  },
+  'import-pick'(){
+    const f = document.getElementById('import-file');
+    if(f) f.click(); else UI.toast('ورودی فایل در دسترس نیست');
+  },
+  'import-file'(id, el){
+    const file = el.files && el.files[0];
+    if(!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try{
+        const data = JSON.parse(String(r.result));
+        if(!data || !Array.isArray(data.games) || !Array.isArray(data.players)) throw new Error('invalid');
+        db = data;
+        if(!db.weights) db.weights = {};
+        if(!db.ai) db.ai = freshDb().ai;
+        if(db.activeGameId == null || !db.games.some(x => x.id === db.activeGameId)){
+          const rest = sortedGames();
+          db.activeGameId = rest.length ? rest[0].id : null;
+        }
+        persist();
+        UI.selSource = null; UI.pendingTargets = null;
+        UI.toast('پشتیبان با موفقیت بازیابی شد ✓');
+        UI.go('settings', 'games');
+      }catch(e){
+        UI.toast('فایل پشتیبان معتبر نیست ❌');
+      }
+    };
+    r.readAsText(file);
+  },
+  'download-html'(){
+    UI.closeSheet();
+    setTimeout(() => {
+      const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      downloadFile('تحلیل‌گر-مافیا-آفلاین.html', html, 'text/html;charset=utf-8');
+      UI.toast('فایل آفلاین دانلود شد — آن را روی گوشی باز کنید 📱');
+    }, 350);
+  },
+  'wipe-all'(){
+    UI.confirmSheet('پاک کردن همه داده‌ها', 'همه بازی‌ها، بازیکنان، یادداشت‌ها، رأی‌ها و تنظیمات برای همیشه از این گوشی حذف شوند؟ این عمل قابل بازگشت نیست!', 'همه‌چیز را پاک کن', () => {
+      wipeAll(); UI.closeSheet(); UI.go('table'); UI.toast('همه داده‌ها پاک شد');
+    }, true);
+  }
+});
+
+/* ============================================================
+   راه‌اندازی برنامه
+   ============================================================ */
+initDb();
+(function(){
+  if(!activeGame()){
+    const rest = sortedGames();
+    if(rest.length) db.activeGameId = rest[0].id;
+  }
+  const g = activeGame();
+  UI.reportStage = g ? g.currentStageIndex : 0;
+  UI.voteStage = g ? g.currentStageIndex : 0;
+  UI.render();
+})();
+</script>
+</body>
+</html>
