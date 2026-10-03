@@ -245,10 +245,8 @@ fun MainScreen(viewModel: MafiaViewModel) {
             ) {
                 when (currentDestination) {
                     MainDestination.TARGETS -> Box(modifier = Modifier.fillMaxSize()) {
-                        // Simplified player list view for the table screen.
-                        // The legacy CircularTableTargetScreen has been
-                        // removed; target selection now happens one speaker
-                        // at a time via the SpeakerTargetScreen flow.
+                        // Round-table view with numbered seats. Tap any
+                        // player to open the SpeakerTargetScreen for them.
                         PlayerListTableScreen(
                             players = players,
                             targets = targets,
@@ -258,6 +256,9 @@ fun MainScreen(viewModel: MafiaViewModel) {
                                 if (activeSpeakers.isNotEmpty()) {
                                     speakerFlowQueue = activeSpeakers
                                 }
+                            },
+                            onPlayerTap = { tapped ->
+                                speakerFlowQueue = listOf(tapped)
                             }
                         )
                     }
@@ -296,7 +297,12 @@ fun MainScreen(viewModel: MafiaViewModel) {
                             Tab(
                                 selected = settingsTab == 1,
                                 onClick = { settingsTab = 1 },
-                                text = { Text("ضرایب الگوریتم و تنظیمات", fontWeight = if (settingsTab == 1) FontWeight.Bold else FontWeight.Normal) }
+                                text = { Text("چیدمان صندلی", fontWeight = if (settingsTab == 1) FontWeight.Bold else FontWeight.Normal) }
+                            )
+                            Tab(
+                                selected = settingsTab == 2,
+                                onClick = { settingsTab = 2 },
+                                text = { Text("ضرایب الگوریتم", fontWeight = if (settingsTab == 2) FontWeight.Bold else FontWeight.Normal) }
                             )
                         }
 
@@ -318,6 +324,12 @@ fun MainScreen(viewModel: MafiaViewModel) {
                                 onDeletePlayer = { viewModel.deletePlayer(it) },
                                 onRenamePlayer = { pId, newName -> viewModel.renamePlayer(pId, newName) },
                                 onMovePlayer = { p, dir -> viewModel.movePlayer(p, dir) }
+                            )
+                        } else if (settingsTab == 1) {
+                            SeatLayoutScreen(
+                                players = players,
+                                onSwap = { p1, p2 -> viewModel.swapPlayers(p1, p2) },
+                                onMove = { p, dir -> viewModel.movePlayer(p, dir) }
                             )
                         } else {
                             SettingsScreen(
