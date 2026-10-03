@@ -76,6 +76,45 @@ fun MainScreen(viewModel: MafiaViewModel) {
         var showMenusOnTable by remember { mutableStateOf(false) }
         val shouldShowMenus = !isTableScreen || showMenusOnTable
 
+        // Speaker-targeting flow: when set, full-screen SpeakerTargetScreen
+        // takes over the UI until the user saves-and-advances through all
+        // active players or goes back.
+        var speakerFlowQueue by remember { mutableStateOf<List<PlayerEntity>>(emptyList()) }
+        var speakerFlowNoteText by remember { mutableStateOf("") }
+        var speakerFlowNoteTags by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+        // Full-screen override when a speaker is being targeted.
+        val activeSpeaker = speakerFlowQueue.firstOrNull()
+        if (activeSpeaker != null) {
+            SpeakerTargetScreen(
+                speaker = activeSpeaker,
+                allPlayers = players,
+                alreadyTargetedIds = emptySet(),
+                initialSelectedTargetIds = emptySet(),
+                initialNoteText = "",
+                initialNoteTags = emptySet(),
+                isLastPlayer = speakerFlowQueue.size == 1,
+                onBack = { speakerFlowQueue = emptyList() },
+                onSaveAndNext = { targetIds, noteText, noteTags ->
+                    viewModel.saveTargets(activeSpeaker.id, targetIds, true)
+                    val noteParts = buildList {
+                        if (noteText.isNotBlank()) add(noteText)
+                        addAll(noteTags)
+                    }
+                    if (noteParts.isNotEmpty()) {
+                        viewModel.addNote(
+                            playerId = activeSpeaker.id,
+                            category = "speaker_targeting",
+                            text = noteParts.joinToString(" • ")
+                        )
+                    }
+                    // Pop the current speaker, continue with the rest.
+                    speakerFlowQueue = speakerFlowQueue.drop(1)
+                }
+            )
+            return@CompositionLocalProvider
+        }
+
         Scaffold(
             contentWindowInsets = WindowInsets.safeDrawing,
             topBar = {
@@ -267,6 +306,24 @@ fun MainScreen(viewModel: MafiaViewModel) {
                                 imageVector = if (showMenusOnTable) Icons.Default.FullscreenExit else Icons.Default.Menu,
                                 contentDescription = if (showMenusOnTable) "مخفی‌سازی منوها" else "نمایش منوها",
                                 modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        // Start speaker-targeting flow button (bottom-start).
+                        // When tapped, the entire screen is replaced with
+                        // SpeakerTargetScreen for each active player in turn.
+                        val activeSpeakers = players.filter { !it.isEliminated }
+                        if (activeSpeakers.isNotEmpty()) {
+                            ExtendedFloatingActionButton(
+                                onClick = { speakerFlowQueue = activeSpeakers },
+                                containerColor = MafiaCrimson,
+                                contentColor = Color.White,
+                                icon = { Icon(Icons.Default.RecordVoiceOver, contentDescription = null) },
+                                text = { Text("شروع ثبت تارگت سخنران") },
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .padding(start = 12.dp, bottom = 12.dp)
+                                    .testTag("start_speaker_targeting_btn")
                             )
                         }
                     }
