@@ -83,6 +83,11 @@ fun MainScreen(viewModel: MafiaViewModel) {
         var speakerFlowQueue by remember { mutableStateOf<List<PlayerEntity>>(emptyList()) }
         var speakerFlowNoteText by remember { mutableStateOf("") }
         var speakerFlowNoteTags by remember { mutableStateOf<Set<String>>(emptySet()) }
+        // Persist target-selection across speaker changes so re-opening a
+        // previous speaker shows the same red circles as before.
+        val speakerSelections = remember { mutableMapOf<Long, Set<Long>>() }
+        val speakerNoteTexts = remember { mutableMapOf<Long, String>() }
+        val speakerNoteTagsMap = remember { mutableMapOf<Long, Set<String>>() }
 
         // Full-screen override when a speaker is being targeted.
         val activeSpeaker = speakerFlowQueue.firstOrNull()
@@ -90,6 +95,9 @@ fun MainScreen(viewModel: MafiaViewModel) {
             SpeakerTargetScreen(
                 speaker = activeSpeaker,
                 allPlayers = players,
+                initialSelectedTargetIds = speakerSelections[activeSpeaker.id] ?: emptySet(),
+                initialNoteText = speakerNoteTexts[activeSpeaker.id] ?: "",
+                initialNoteTags = speakerNoteTagsMap[activeSpeaker.id] ?: emptySet(),
                 alreadyTargetedIds = emptySet(),
                 initialSelectedTargetIds = emptySet(),
                 initialNoteText = "",
@@ -109,8 +117,16 @@ fun MainScreen(viewModel: MafiaViewModel) {
                             text = noteParts.joinToString(" • ")
                         )
                     }
+                    // Persist this speaker's selections so the red circles
+                    // come back if the user re-opens this speaker.
+                    speakerSelections[activeSpeaker.id] = targetIds.toSet()
+                    speakerNoteTexts[activeSpeaker.id] = noteText
+                    speakerNoteTagsMap[activeSpeaker.id] = noteTags.toSet()
                     // Pop the current speaker, continue with the rest.
                     speakerFlowQueue = speakerFlowQueue.drop(1)
+                },
+                onSelectionChange = { ids ->
+                    speakerSelections[activeSpeaker.id] = ids
                 }
             )
             return@CompositionLocalProvider
@@ -249,7 +265,6 @@ fun MainScreen(viewModel: MafiaViewModel) {
                         // player to open the SpeakerTargetScreen for them.
                         PlayerListTableScreen(
                             players = players,
-                            targets = targets,
                             activeSpeakersCount = players.count { !it.isEliminated },
                             activeGame = activeGame,
                             onStartTargeting = {
@@ -261,7 +276,8 @@ fun MainScreen(viewModel: MafiaViewModel) {
                             onPlayerTap = { tapped ->
                                 speakerFlowQueue = listOf(tapped)
                             },
-                            onSwapPlayers = { id1, id2 -> viewModel.swapPlayers(id1, id2) }
+                            onSwapPlayers = { id1, id2 -> viewModel.swapPlayers(id1, id2) },
+                            onMovePlayer = { p, up -> viewModel.movePlayer(p, up) }
                         )
                     }
 

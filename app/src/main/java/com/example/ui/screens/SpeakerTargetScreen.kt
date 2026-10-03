@@ -69,7 +69,8 @@ fun SpeakerTargetScreen(
     onBack: () -> Unit,
     onSaveAndNext: (targetIds: List<Long>, noteText: String, noteTags: List<String>) -> Unit,
     onSaveAndFinish: (targetIds: List<Long>, noteText: String, noteTags: List<String>) -> Unit =
-        { ids, t, tg -> onSaveAndNext(ids, t, tg) }
+        { ids, t, tg -> onSaveAndNext(ids, t, tg) },
+    onSelectionChange: (Set<Long>) -> Unit = {}
 ) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         // Local state
@@ -179,13 +180,15 @@ fun SpeakerTargetScreen(
                     PlayerCircleGrid(
                         players = candidatePlayers,
                         selectedIds = selectedTargetIds,
-                        onToggle = { id ->
-                            selectedTargetIds = if (selectedTargetIds.contains(id)) {
-                                selectedTargetIds - id
-                            } else {
-                                selectedTargetIds + id
-                            }
+                    onToggle = { id ->
+                        val newSel = if (selectedTargetIds.contains(id)) {
+                            selectedTargetIds - id
+                        } else {
+                            selectedTargetIds + id
                         }
+                        selectedTargetIds = newSel
+                        onSelectionChange(newSel)
+                    }
                     )
                 }
 
