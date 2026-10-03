@@ -37,8 +37,8 @@ import com.example.ui.theme.*
 @Composable
 fun SeatLayoutScreen(
     players: List<PlayerEntity>,
-    onSwap: (player1Id: Long, player2Id: Long) -> Unit,
-    onMove: (player: PlayerEntity, directionUp: Boolean) -> Unit
+    onSwap: (Long, Long) -> Unit,
+    onMove: (PlayerEntity, Boolean) -> Unit
 ) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         var pendingSwapFrom by remember { mutableStateOf<Long?>(null }

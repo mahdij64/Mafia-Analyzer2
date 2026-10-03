@@ -328,7 +328,7 @@ fun MainScreen(viewModel: MafiaViewModel) {
                         } else if (settingsTab == 1) {
                             SeatLayoutScreen(
                                 players = players,
-                                onSwap = { p1, p2 -> viewModel.swapPlayers(p1, p2) },
+                                onSwap = { id1: Long, id2: Long -> viewModel.swapPlayers(id1, id2) },
                                 onMove = { p, dir -> viewModel.movePlayer(p, dir) }
                             )
                         } else {
