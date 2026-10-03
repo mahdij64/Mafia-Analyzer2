@@ -437,7 +437,12 @@ private fun PlayerSuspectCard(
                         text = analysis.displayName,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = if (analysis.isOwner && analysis.displayName != analysis.playerName) MafiaCrimsonLight else TextPrimaryDark
+                        color = when (analysis.ownerRoleColor) {
+                            "PURPLE" -> Color(0xFF9C27B0)
+                            "GREEN" -> Color(0xFF4CAF50)
+                            "BLUE" -> Color(0xFF2196F3)
+                            else -> TextPrimaryDark
+                        }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     StatusChip(

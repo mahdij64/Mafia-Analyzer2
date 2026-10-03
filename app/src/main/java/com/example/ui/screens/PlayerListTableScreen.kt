@@ -50,6 +50,7 @@ fun PlayerListTableScreen(
     activeGame: GameEntity? = null,
     currentStageIndex: Int = 0,
     completedSpeakerIds: Set<Long> = emptySet(),
+    targets: List<com.example.data.local.TargetEntity> = emptyList(),
     onStartTargeting: () -> Unit,
     onPlayerTap: (PlayerEntity) -> Unit = {},
     onSwapPlayers: (Long, Long) -> Unit = { _, _ -> },
@@ -59,6 +60,7 @@ fun PlayerListTableScreen(
 ) {
     var isEditMode by remember { mutableStateOf(false) }
     var isNightKillMode by remember { mutableStateOf(false) }
+    var showEndDayReportDialog by remember { mutableStateOf(false) }
 
     // ---- Drag & drop state ----
     var draggedPlayerId by remember { mutableStateOf<Long?>(null) }
@@ -612,7 +614,7 @@ private fun HeaderCard(
             if (showEndDayButton) {
                 Spacer(Modifier.height(8.dp))
                 Button(
-                    onClick = onEndDay,
+                    onClick = { showEndDayReportDialog = true },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SuspicionGreen,
                         contentColor = Color.White
@@ -634,6 +636,180 @@ private fun HeaderCard(
             }
         }
     }
+
+    // End Day Report Dialog
+    if (showEndDayReportDialog) {
+        EndDayReportDialog(
+            players = players,
+            targets = targets,
+            currentStageIndex = currentStageIndex,
+            onConfirm = {
+                showEndDayReportDialog = false
+                onEndDay()
+            },
+            onDismiss = { showEndDayReportDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun EndDayReportDialog(
+    players: List<PlayerEntity>,
+    targets: List<com.example.data.local.TargetEntity>,
+    currentStageIndex: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val currentStageTargets = targets.filter { it.stageIndex == currentStageIndex }
+    val targetsReceivedCount = players.associate { p ->
+        p.id to currentStageTargets.count { it.targetPlayerId == p.id }
+    }
+    
+    val mostTargeted = targetsReceivedCount.maxByOrNull { it.value }
+    val leastTargeted = targetsReceivedCount.filter { it.value > 0 }.minByOrNull { it.value }
+    val zeroTargets = targetsReceivedCount.filter { it.value == 0 }.keys
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MafiaCardBg,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Assessment, contentDescription = null, tint = MafiaGold, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "📊 گزارش پایان روز",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = MafiaGold
+                )
+            }
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "خلاصه تارگت‌های امروز:",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimaryDark,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                
+                // Most targeted
+                if (mostTargeted != null && mostTargeted.value > 0) {
+                    val player = players.firstOrNull { it.id == mostTargeted.key }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .background(MafiaCrimsonDark.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = MafiaCrimson, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                "🎯 بیشترین تارگت",
+                                fontSize = 12.sp,
+                                color = MafiaCrimsonLight,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "${player?.name ?: "?"} (${mostTargeted.value} تارگت)",
+                                fontSize = 14.sp,
+                                color = TextPrimaryDark,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+                
+                // Least targeted
+                if (leastTargeted != null) {
+                    val player = players.firstOrNull { it.id == leastTargeted.key }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .background(SuspicionGreen.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Shield, contentDescription = null, tint = SuspicionGreen, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                "🛡️ کمترین تارگت",
+                                fontSize = 12.sp,
+                                color = SuspicionGreen,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "${player?.name ?: "?"} (${leastTargeted.value} تارگت)",
+                                fontSize = 14.sp,
+                                color = TextPrimaryDark,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+                
+                // Zero targets
+                if (zeroTargets.isNotEmpty()) {
+                    val zeroNames = zeroTargets.mapNotNull { id -> players.firstOrNull { it.id == id }?.name }.joinToString("، ")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .background(Color(0xFFFFF3E0), RoundedCornerShape(8.dp))
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.VisibilityOff, contentDescription = null, tint = Color(0xFFFF6F00), modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                "👻 بدون تارگت",
+                                fontSize = 12.sp,
+                                color = Color(0xFFFF6F00),
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                zeroNames,
+                                fontSize = 14.sp,
+                                color = TextPrimaryDark,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "آیا می‌خواهید به روز بعد بروید؟",
+                    fontSize = 13.sp,
+                    color = TextSecondaryDark,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = SuspicionGreen, contentColor = Color.White)
+            ) {
+                Text("بله، برو به روز بعد", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("انصراف", color = TextSecondaryDark)
+            }
+        }
+    )
 }
 
 // ====================================================================

@@ -319,6 +319,7 @@ fun MainScreen(viewModel: MafiaViewModel) {
                             activeGame = activeGame,
                             currentStageIndex = currentStageIndex,
                             completedSpeakerIds = completedSpeakerIds,
+                            targets = targets,
                             onStartTargeting = {
                                 val activeSpeakers = players.filter { !it.isEliminated }
                                 if (activeSpeakers.isNotEmpty()) {

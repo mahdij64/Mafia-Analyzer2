@@ -133,7 +133,13 @@ fun FinalReportScreen(
                                 label = {
                                     Text(
                                         text = "${s.displayName} (${s.totalScore})",
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = when (s.ownerRoleColor) {
+                                            "PURPLE" -> Color(0xFF9C27B0)
+                                            "GREEN" -> Color(0xFF4CAF50)
+                                            "BLUE" -> Color(0xFF2196F3)
+                                            else -> if (isSelected) Color.White else TextPrimaryDark
+                                        }
                                     )
                                 },
                                 colors = FilterChipDefaults.filterChipColors(

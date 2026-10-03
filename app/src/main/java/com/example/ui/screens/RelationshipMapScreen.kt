@@ -34,17 +34,9 @@ fun RelationshipMapScreen(
 ) {
     val stage = GameStage.getStage(currentStageIndex)
     val playerMap = players.associateBy { it.id }
-    // Stealth display names for reports (owner with non-citizen role → "کد XX")
+    // Display names (no stealth mode - just use real names)
     val displayNameMap = remember(players) {
-        players.associate { p ->
-            val isOwner = p.isOwner
-            val isHidden = isOwner && p.knownRole != null && p.knownRole != "CITIZEN"
-            val name = if (isHidden) {
-                val num = (p.id.coerceAtLeast(0L) % 100L).toInt()
-                "کد ${num.toString().padStart(2, '0')}"
-            } else p.name
-            p.id to name
-        }
+        players.associate { p -> p.id to p.name }
     }
     fun dn(id: Long): String = displayNameMap[id] ?: playerMap[id]?.name ?: "?"
 
@@ -294,7 +286,12 @@ fun RelationshipMapScreen(
                             text = dn(player.id) + if (player.isEliminated) " 💀" else "",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
-                            color = TextPrimaryDark
+                            color = when {
+                                player.isOwner && player.knownRole == "MAFIA" -> Color(0xFF9C27B0)
+                                player.isOwner && player.knownRole == "CITIZEN" -> Color(0xFF4CAF50)
+                                player.isOwner && player.knownRole == "INDEPENDENT" -> Color(0xFF2196F3)
+                                else -> TextPrimaryDark
+                            }
                         )
 
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

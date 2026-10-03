@@ -40,17 +40,25 @@ data class PlayerScoreAnalysis(
 ) {
     /**
      * Name safe for display in reports when the screen might be seen
-     * by neighbours. If the local user is the owner and has a
-     * non-citizen role, the real name is replaced with a numeric code
-     * (e.g. "کد ۱۱"). Otherwise returns the real [playerName].
+     * by neighbours. Returns the real [playerName] but UI should use
+     * [ownerRoleColor] to indicate the owner's role visually.
      */
     val displayName: String
-        get() = if (isOwner && knownRole != null && knownRole != "CITIZEN") {
-            val num = (playerId.coerceAtLeast(0L) % 100L).toInt()
-            "کد ${num.toString().padStart(2, '0')}"
-        } else {
-            playerName
-        }
+        get() = playerName
+    
+    /**
+     * Color to use for displaying the owner's name based on their role.
+     * Returns null for non-owners or citizens.
+     */
+    val ownerRoleColor: String?
+        get() = if (isOwner && knownRole != null) {
+            when (knownRole) {
+                "MAFIA" -> "PURPLE"
+                "CITIZEN" -> "GREEN"
+                "INDEPENDENT" -> "BLUE"
+                else -> null
+            }
+        } else null
 }
 
 object SuspicionCalculator {
