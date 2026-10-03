@@ -187,7 +187,7 @@ interface AppDao {
     @Query("UPDATE players SET knownRole = NULL WHERE gameId = :gameId AND isOwner = 0")
     suspend fun clearNonOwnerRoles(gameId: Long)
 
-    @Query("UPDATE players SET isOwner = (id == :ownerPlayerId), knownRole = CASE WHEN id == :ownerPlayerId THEN :ownerRole ELSE knownRole END WHERE gameId = :gameId")
+    @Query("UPDATE players SET isOwner = CASE WHEN :ownerPlayerId IS NOT NULL AND id = :ownerPlayerId THEN 1 ELSE 0 END, knownRole = CASE WHEN :ownerPlayerId IS NOT NULL AND id = :ownerPlayerId THEN :ownerRole ELSE knownRole END WHERE gameId = :gameId")
     suspend fun updateOwnerPlayer(gameId: Long, ownerPlayerId: Long?, ownerRole: String)
 
     @Update

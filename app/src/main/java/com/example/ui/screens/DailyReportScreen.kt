@@ -214,6 +214,121 @@ fun DailyReportScreen(
             }
         }
 
+        // Statistics Section
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MafiaCardBg),
+                shape = RoundedCornerShape(14.dp),
+                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(MafiaGold)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Analytics, contentDescription = null, tint = MafiaGold, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "📊 آمار کلی بازی",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MafiaGold
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    if (scores.isEmpty()) {
+                        Text("هنوز داده‌ای ثبت نشده", fontSize = 12.sp, color = TextMutedDark)
+                    } else {
+                        // Most Targeted
+                        val mostTargeted = scores.maxByOrNull { it.targetsReceivedCount }
+                        if (mostTargeted != null && mostTargeted.targetsReceivedCount > 0) {
+                            StatRow(
+                                icon = "🎯",
+                                label = "بیشترین تارگت دریافتی",
+                                value = "${mostTargeted.displayName} (${mostTargeted.targetsReceivedCount} تارگت)",
+                                color = MafiaCrimsonLight
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+                        
+                        // Least Targeted
+                        val leastTargeted = scores.filter { !it.isEliminated }.minByOrNull { it.targetsReceivedCount }
+                        if (leastTargeted != null) {
+                            StatRow(
+                                icon = "🛡️",
+                                label = "کمترین تارگت دریافتی",
+                                value = "${leastTargeted.displayName} (${leastTargeted.targetsReceivedCount} تارگت)",
+                                color = SuspicionGreen
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+                        
+                        // Most Active (made most targets)
+                        val mostActive = scores.maxByOrNull { it.totalTargetsMade }
+                        if (mostActive != null && mostActive.totalTargetsMade > 0) {
+                            StatRow(
+                                icon = "⚡",
+                                label = "فعال‌ترین بازیکن",
+                                value = "${mostActive.displayName} (${mostActive.totalTargetsMade} تارگت زده)",
+                                color = Color(0xFFFFA726)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+                        
+                        // Highest Suspicion
+                        val highestSuspicion = scores.maxByOrNull { it.totalScore }
+                        if (highestSuspicion != null) {
+                            StatRow(
+                                icon = "🔴",
+                                label = "مشکوک‌ترین بازیکن",
+                                value = "${highestSuspicion.displayName} (امتیاز: ${highestSuspicion.totalScore})",
+                                color = MafiaCrimson
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+                        
+                        // Lowest Suspicion
+                        val lowestSuspicion = scores.filter { !it.isEliminated }.minByOrNull { it.totalScore }
+                        if (lowestSuspicion != null) {
+                            StatRow(
+                                icon = "✅",
+                                label = "کم‌خطرترین بازیکن",
+                                value = "${lowestSuspicion.displayName} (امتیاز: ${lowestSuspicion.totalScore})",
+                                color = SuspicionGreen
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+                        
+                        // Most Votes Received
+                        val mostVotes = scores.maxByOrNull { it.votesReceivedCount }
+                        if (mostVotes != null && mostVotes.votesReceivedCount > 0) {
+                            StatRow(
+                                icon = "🗳️",
+                                label = "بیشترین رأی دریافتی",
+                                value = "${mostVotes.displayName} (${mostVotes.votesReceivedCount} رأی)",
+                                color = Color(0xFFAB47BC)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+                        
+                        // Most Notes
+                        val mostNotes = scores.maxByOrNull { it.suspiciousNotesCount + it.talkNotesCount + it.opinionNotesCount }
+                        if (mostNotes != null) {
+                            val totalNotes = mostNotes.suspiciousNotesCount + mostNotes.talkNotesCount + mostNotes.opinionNotesCount
+                            if (totalNotes > 0) {
+                                StatRow(
+                                    icon = "📝",
+                                    label = "بیشترین یادداشت",
+                                    value = "${mostNotes.displayName} ($totalNotes یادداشت)",
+                                    color = Color(0xFF42A5F5)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (filteredScores.isEmpty()) {
             item {
                 Card(
@@ -439,5 +554,44 @@ private fun FactorRow(factor: FactorItem) {
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun StatRow(
+    icon: String,
+    label: String,
+    value: String,
+    color: Color
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(0.45f)
+        ) {
+            Text(text = icon, fontSize = 14.sp)
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                color = TextSecondaryDark,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+        }
+        Text(
+            text = value,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = color,
+            modifier = Modifier.weight(0.55f),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+        )
     }
 }

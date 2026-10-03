@@ -452,7 +452,7 @@ object SuspicionCalculator {
             manualScore = currentManual,
             isEliminated = player.isEliminated,
             isOwner = player.isOwner,
-            knownRole = player.knownRole
+            knownRole = player.knownRole ?: if (player.isOwner) "CITIZEN" else null
         )
     }
 
