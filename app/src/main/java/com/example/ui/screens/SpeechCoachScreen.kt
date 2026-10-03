@@ -127,25 +127,35 @@ fun SpeechCoachScreen(
                                 "INDEPENDENT" -> "مستقل 🎭"
                                 else -> "شهروند 🛡️"
                             }
-                            // Use stealth display name for owner in reports
-                            val ownerDisplayName = if (ownerRole != "CITIZEN" && ownerPlayer != null) {
-                                val num = (ownerPlayer.id.coerceAtLeast(0L) % 100L).toInt()
-                                "کد ${num.toString().padStart(2, '0')}"
-                            } else {
-                                ownerPlayer?.name ?: "تعیین نشده"
+                            val ownerName = ownerPlayer?.name ?: "تعیین نشده"
+                            val ownerColor = when (ownerRole) {
+                                "MAFIA" -> Color(0xFF9C27B0)
+                                "INDEPENDENT" -> Color(0xFF2196F3)
+                                else -> Color(0xFF4CAF50)
                             }
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
                                 color = roleBadgeColor,
                                 border = BorderStroke(0.5.dp, MafiaGold)
                             ) {
-                                Text(
-                                    text = "$ownerDisplayName ($roleLabel)",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White,
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
+                                ) {
+                                    Text(
+                                        text = ownerName,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = ownerColor
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "($roleLabel)",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color.White
+                                    )
+                                }
                             }
                         }
 
