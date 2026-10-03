@@ -407,7 +407,7 @@ fun SpeechCoachScreen(
                         else -> "شهروند 🛡️"
                     }
                     Text(
-                        text = "⚡ توصیه‌های کلیدی متناسب با نقش شما ($roleLabel):",
+                        text = "⚡ توصیه‌های کلیدی متناسب با نقش شما:",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = MafiaGold

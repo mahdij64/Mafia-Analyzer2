@@ -669,9 +669,12 @@ private fun EndDayReportDialog(
         p.id to currentStageTargets.count { it.targetPlayerId == p.id }
     }
     
-    val mostTargeted = targetsReceivedCount.maxByOrNull { it.value }
-    val leastTargeted = targetsReceivedCount.filter { it.value > 0 }.minByOrNull { it.value }
-    val zeroTargets = targetsReceivedCount.filter { it.value == 0 }.keys
+    // Sort players by target count (descending)
+    val sortedPlayers = targetsReceivedCount.toList()
+        .sortedByDescending { it.second }
+        .mapNotNull { (playerId, count) ->
+            players.firstOrNull { it.id == playerId }?.let { player -> player to count }
+        }
     
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -691,102 +694,58 @@ private fun EndDayReportDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    "خلاصه تارگت‌های امروز:",
+                    "آمار تارگت‌های امروز (از زیاد به کم):",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimaryDark,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
                 
-                // Most targeted
-                if (mostTargeted != null && mostTargeted.value > 0) {
-                    val player = players.firstOrNull { it.id == mostTargeted.key }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .background(MafiaCrimsonDark.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = MafiaCrimson, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                "🎯 بیشترین تارگت",
-                                fontSize = 12.sp,
-                                color = MafiaCrimsonLight,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "${player?.name ?: "?"} (${mostTargeted.value} تارگت)",
-                                fontSize = 14.sp,
-                                color = TextPrimaryDark,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                // Sorted list
+                sortedPlayers.forEachIndexed { index, (player, count) ->
+                    val bgColor = when {
+                        index == 0 && count > 0 -> MafiaCrimsonDark.copy(alpha = 0.3f)
+                        count == 0 -> Color(0xFFFFF3E0)
+                        else -> Color.Transparent
                     }
-                    Spacer(Modifier.height(8.dp))
-                }
-                
-                // Least targeted
-                if (leastTargeted != null) {
-                    val player = players.firstOrNull { it.id == leastTargeted.key }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .background(SuspicionGreen.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Shield, contentDescription = null, tint = SuspicionGreen, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                "🛡️ کمترین تارگت",
-                                fontSize = 12.sp,
-                                color = SuspicionGreen,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "${player?.name ?: "?"} (${leastTargeted.value} تارگت)",
-                                fontSize = 14.sp,
-                                color = TextPrimaryDark,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                    val icon = when {
+                        index == 0 && count > 0 -> Icons.Default.Warning
+                        count == 0 -> Icons.Default.VisibilityOff
+                        else -> null
                     }
-                    Spacer(Modifier.height(8.dp))
-                }
-                
-                // Zero targets
-                if (zeroTargets.isNotEmpty()) {
-                    val zeroNames = zeroTargets.mapNotNull { id -> players.firstOrNull { it.id == id }?.name }.joinToString("، ")
+                    val iconColor = when {
+                        index == 0 && count > 0 -> MafiaCrimson
+                        count == 0 -> Color(0xFFFF6F00)
+                        else -> TextMutedDark
+                    }
+                    
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .background(Color(0xFFFFF3E0), RoundedCornerShape(8.dp))
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(vertical = 4.dp)
+                            .background(bgColor, RoundedCornerShape(6.dp))
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Icon(Icons.Default.VisibilityOff, contentDescription = null, tint = Color(0xFFFF6F00), modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Column {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            if (icon != null) {
+                                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                            }
                             Text(
-                                "👻 بدون تارگت",
-                                fontSize = 12.sp,
-                                color = Color(0xFFFF6F00),
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                zeroNames,
+                                text = player.name,
                                 fontSize = 14.sp,
                                 color = TextPrimaryDark,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = if (index == 0 && count > 0) FontWeight.Bold else FontWeight.Normal
                             )
                         }
+                        Text(
+                            text = "$count تارگت",
+                            fontSize = 13.sp,
+                            color = if (index == 0 && count > 0) MafiaCrimsonLight else TextSecondaryDark,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
                 
