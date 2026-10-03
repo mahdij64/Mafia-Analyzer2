@@ -4,19 +4,20 @@ import com.example.data.local.GameEntity
 import com.example.data.local.PlayerEntity
 
 /**
- * Helpers for displaying player information safely depending on
- * whether the local user is a citizen, mafia, or independent role.
+ * Helpers for displaying player information safely.
  *
- * If the owner (local user) plays a non-citizen role (Mafia or
- * Independent), their own identity is hidden under a stable code
- * so the screen can be shown to neighbours without revealing their
- * role or real name.
+ * For the local user (game owner) playing a non-citizen role, the
+ * real name is replaced with a stable numeric code so the screen
+ * can be shown to neighbours without revealing identity.
+ *
+ * The code never mentions any role name (no MAFIA / INDEPENDENT
+ * wording leaks into the UI). It is just a number like "کد ۰۱" or
+ * "کد ۷۷".
  */
 data class SafePlayerDisplay(
     val displayName: String,   // what to show in the UI
     val isOwner: Boolean,      // whether this player is the local user
-    val isHidden: Boolean,     // whether the real name is being concealed
-    val roleCode: String       // "CITIZEN", "MAFIA", "INDEPENDENT"
+    val isHidden: Boolean      // whether the real name is being concealed
 )
 
 object PlayerDisplay {
@@ -24,33 +25,24 @@ object PlayerDisplay {
      * Returns the SafePlayerDisplay for [player] given the current
      * [game]. If the local user owns the game and has a non-citizen
      * role, the owner's own display name is replaced with a code.
+     * The code is purely numeric and never contains role words.
      */
     fun forPlayer(player: PlayerEntity, game: GameEntity?): SafePlayerDisplay {
         val isOwner = game?.ownerPlayerId == player.id
-        val role = if (isOwner) game.ownerRole else "CITIZEN"
-        val isHidden = isOwner && role != "CITIZEN"
+        val isHidden = isOwner && (game?.ownerRole != "CITIZEN")
         val display = if (isHidden) {
-            // Code format: ROLE + short suffix (e.g. "MAFIA-01")
-            val short = (player.id % 100).toString().padStart(2, '0')
-            "${role}-${short}"
+            // Pure numeric code, padded to 2 digits, with a Persian prefix
+            // so the user knows it's a code, not a name.
+            // Use id directly (positive) so the code is stable per player.
+            val num = (player.id.coerceAtLeast(0L) % 100L).toInt()
+            "کد ${num.toString().padStart(2, '0')}"
         } else {
             player.name
         }
         return SafePlayerDisplay(
             displayName = display,
             isOwner = isOwner,
-            isHidden = isHidden,
-            roleCode = role
+            isHidden = isHidden
         )
-    }
-
-    /** Short tag/badge for non-citizen owners in the reports. */
-    fun ownerTag(game: GameEntity?): String {
-        val role = game?.ownerRole ?: "CITIZEN"
-        return when (role) {
-            "MAFIA" -> "🔪 ${role}"
-            "INDEPENDENT" -> "🎭 ${role}"
-            else -> "👑 شهروند"
-        }
     }
 }

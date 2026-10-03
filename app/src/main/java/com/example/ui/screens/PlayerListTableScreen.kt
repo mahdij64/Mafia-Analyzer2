@@ -3,6 +3,7 @@ package com.example.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -49,16 +50,19 @@ fun PlayerListTableScreen(
     activeSpeakersCount: Int,
     activeGame: GameEntity? = null,
     onStartTargeting: () -> Unit,
-    onPlayerTap: (PlayerEntity) -> Unit = {}
+    onPlayerTap: (PlayerEntity) -> Unit = {},
+    onSwapPlayers: (Long, Long) -> Unit = { _, _ -> }
 ) {
+    var isEditMode by remember { mutableStateOf(false) }
+    var dragSourceId by remember { mutableStateOf<Long?>(null) }
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MafiaDarkBg)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MafiaDarkBg)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
             // Header summary
             Surface(
                 color = MafiaCardBg,
@@ -85,9 +89,21 @@ fun PlayerListTableScreen(
                             fontSize = 12.sp
                         )
                     }
+                    // Toggle seat-edit mode (drag & drop)
+                    OutlinedButton(
+                        onClick = { isEditMode = !isEditMode },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (isEditMode) MafiaCrimson else Color.Transparent,
+                            contentColor = if (isEditMode) Color.White else MafiaGold
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MafiaGold),
+                        modifier = Modifier.padding(end = 6.dp)
+                    ) {
+                        Text(if (isEditMode) "پایان چیدمان" else "چیدمان صندلی", fontSize = 12.sp)
+                    }
                     Button(
                         onClick = onStartTargeting,
-                        enabled = activeSpeakersCount > 0,
+                        enabled = activeSpeakersCount > 0 && !isEditMode,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MafiaCrimson,
                             contentColor = Color.White
@@ -109,8 +125,11 @@ fun PlayerListTableScreen(
             } else {
                 if (active.isNotEmpty()) {
                     Text(
-                        text = "بازیکنان • روی هر کس بزنید تا سخنران شروع شود",
-                        color = TextPrimaryDark,
+                        text = if (isEditMode)
+                            "یک نفر را بکش و روی نفر دیگر رها کن تا جا عوض کنند"
+                        else
+                            "بازیکنان • روی هر کس بزنید تا سخنران شروع شود",
+                        color = if (isEditMode) MafiaCrimsonLight else TextPrimaryDark,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp,
                         modifier = Modifier.padding(start = 4.dp, top = 4.dp)
@@ -119,7 +138,17 @@ fun PlayerListTableScreen(
                         players = active,
                         targets = targets,
                         activeGame = activeGame,
-                        onPlayerTap = onPlayerTap
+                        onPlayerTap = onPlayerTap,
+                        isEditMode = isEditMode,
+                        dragSourceId = dragSourceId,
+                        onDragStart = { id -> dragSourceId = id },
+                        onDragEnd = { targetId ->
+                            val src = dragSourceId
+                            if (src != null && src != targetId) {
+                                onSwapPlayers(src, targetId)
+                            }
+                            dragSourceId = null
+                        }
                     )
                 }
 
@@ -144,7 +173,11 @@ private fun ActivePlayerGrid(
     players: List<PlayerEntity>,
     targets: List<TargetEntity>,
     activeGame: GameEntity?,
-    onPlayerTap: (PlayerEntity) -> Unit
+    onPlayerTap: (PlayerEntity) -> Unit,
+    isEditMode: Boolean,
+    dragSourceId: Long?,
+    onDragStart: (Long) -> Unit,
+    onDragEnd: (Long) -> Unit
 ) {
     // 4 per row. For each player, look up who they targeted in the
     // current stage and show a one-line summary.
@@ -172,7 +205,11 @@ private fun ActivePlayerGrid(
                         },
                         onClick = { onPlayerTap(p) },
                         activeGame = activeGame,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        isEditMode = isEditMode,
+                        isDragSource = dragSourceId == p.id,
+                        onDragStart = { onDragStart(p.id) },
+                        onDragEnd = { onDragEnd(p.id) }
                     )
                 }
                 repeat(4 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
@@ -189,24 +226,43 @@ private fun ActivePlayerTile(
     totalTargets: Int,
     onClick: () -> Unit,
     activeGame: GameEntity?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isEditMode: Boolean = false,
+    isDragSource: Boolean = false,
+    onDragStart: () -> Unit = {},
+    onDragEnd: () -> Unit = {}
 ) {
     val display = remember(player.id, activeGame?.id, activeGame?.ownerRole) {
         PlayerDisplay.forPlayer(player, activeGame)
     }
     val isOwner = display.isOwner
     val borderColor = when {
-        display.isHidden -> MafiaCrimsonLight  // stealth owner: red border
-        isOwner -> MafiaGold                    // citizen owner: gold border
+        isDragSource -> MafiaCrimson
+        display.isHidden -> MafiaCrimsonLight
+        isOwner -> MafiaGold
         else -> MafiaBorder
+    }
+    val tileModifier = if (isEditMode) {
+        modifier
+            .padding(vertical = 2.dp)
+            .pointerInput(player.id) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { onDragStart() },
+                    onDragEnd = { onDragEnd() },
+                    onDragCancel = { onDragEnd() },
+                    onDrag = { _, _ -> }
+                )
+            }
+    } else {
+        modifier
+            .clickable(onClick = onClick)
+            .padding(vertical = 2.dp)
     }
     Surface(
         color = MafiaCardBg,
         shape = RoundedCornerShape(10.dp),
         border = androidx.compose.foundation.BorderStroke(1.5.dp, borderColor),
-        modifier = modifier
-            .clickable(onClick = onClick)
-            .padding(vertical = 2.dp)
+        modifier = tileModifier
     ) {
         Column(
             modifier = Modifier
@@ -214,10 +270,10 @@ private fun ActivePlayerTile(
                 .padding(horizontal = 6.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Crown badge for owner
+            // Crown badge for owner (no role words in the UI)
             if (isOwner) {
                 Text(
-                    text = if (display.isHidden) "🔪" else "👑",
+                    text = "👑",
                     fontSize = 14.sp
                 )
                 Spacer(Modifier.height(2.dp))
