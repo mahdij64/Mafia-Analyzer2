@@ -13,10 +13,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -635,20 +639,20 @@ private fun HeaderCard(
                 }
             }
         }
-    }
 
-    // End Day Report Dialog
-    if (showEndDayReportDialog) {
-        EndDayReportDialog(
-            players = players,
-            targets = targets,
-            currentStageIndex = currentStageIndex,
-            onConfirm = {
-                showEndDayReportDialog = false
-                onEndDay()
-            },
-            onDismiss = { showEndDayReportDialog = false }
-        )
+        // End Day Report Dialog
+        if (showEndDayReportDialog) {
+            EndDayReportDialog(
+                players = players,
+                targets = targets,
+                currentStageIndex = currentStageIndex,
+                onConfirm = {
+                    showEndDayReportDialog = false
+                    onEndDay()
+                },
+                onDismiss = { showEndDayReportDialog = false }
+            )
+        }
     }
 }
 
