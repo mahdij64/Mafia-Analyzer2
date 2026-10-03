@@ -77,6 +77,7 @@ fun MainScreen(viewModel: MafiaViewModel) {
         val shouldShowMenus = !isTableScreen || showMenusOnTable
 
         Scaffold(
+            contentWindowInsets = WindowInsets.safeDrawing,
             topBar = {
                 AnimatedVisibility(
                     visible = shouldShowMenus,
