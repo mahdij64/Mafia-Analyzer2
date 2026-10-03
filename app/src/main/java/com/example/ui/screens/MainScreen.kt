@@ -33,6 +33,7 @@ import com.example.ui.viewmodel.MafiaViewModel
 
 enum class MainDestination(val title: String, val icon: ImageVector) {
     TARGETS("میز بازی", Icons.Default.CrisisAlert),
+    SEATS("چیدمان صندلی", Icons.Default.Chair),
     ANALYSIS("گزارش‌ها و تحلیل", Icons.Default.QueryStats),
     SETTINGS("تنظیمات", Icons.Default.Settings)
 }
@@ -251,6 +252,7 @@ fun MainScreen(viewModel: MafiaViewModel) {
                             players = players,
                             targets = targets,
                             activeSpeakersCount = players.count { !it.isEliminated },
+                            activeGame = activeGame,
                             onStartTargeting = {
                                 val activeSpeakers = players.filter { !it.isEliminated }
                                 if (activeSpeakers.isNotEmpty()) {
@@ -280,6 +282,13 @@ fun MainScreen(viewModel: MafiaViewModel) {
                         onRunAiAnalysis = { viewModel.runAiAnalysis() },
                         onClearAiAnalysis = { viewModel.clearAiAnalysis() },
                         onExportReport = { viewModel.generateShareableReport() }
+                    )
+
+                    MainDestination.SEATS -> SeatLayoutScreen(
+                        players = players,
+                        activeGame = activeGame,
+                        onSwap = { id1: Long, id2: Long -> viewModel.swapPlayers(id1, id2) },
+                        onMove = { p, dir -> viewModel.movePlayer(p, dir) }
                     )
 
                     MainDestination.SETTINGS -> Column(modifier = Modifier.fillMaxSize()) {

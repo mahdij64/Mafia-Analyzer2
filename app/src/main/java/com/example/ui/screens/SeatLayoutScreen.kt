@@ -24,8 +24,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.local.GameEntity
 import com.example.data.local.PlayerEntity
 import com.example.ui.theme.*
+import com.example.ui.util.PlayerDisplay
 
 /**
  * Visual seat-layout editor. Lists active players in seat order with
@@ -37,6 +39,7 @@ import com.example.ui.theme.*
 @Composable
 fun SeatLayoutScreen(
     players: List<PlayerEntity>,
+    activeGame: GameEntity? = null,
     onSwap: (Long, Long) -> Unit,
     onMove: (PlayerEntity, Boolean) -> Unit
 ) {
@@ -95,6 +98,7 @@ fun SeatLayoutScreen(
                     isFirst = index == 0,
                     isLast = index == active.lastIndex,
                     isSwapSelected = pendingSwapFrom == player.id,
+                    activeGame = activeGame,
                     onMoveUp = { onMove(player, true) },
                     onMoveDown = { onMove(player, false) },
                     onSwapClick = {
@@ -130,7 +134,8 @@ fun SeatLayoutScreen(
                         onMoveUp = {},
                         onMoveDown = {},
                         onSwapClick = {},
-                        dimmed = true
+                        dimmed = true,
+                        activeGame = activeGame
                     )
                 }
             }
@@ -148,9 +153,18 @@ private fun SeatRow(
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onSwapClick: () -> Unit,
+    activeGame: GameEntity?,
     dimmed: Boolean = false
 ) {
-    val border = if (isSwapSelected) MafiaCrimsonLight else MafiaBorder
+    val display = remember(player.id, activeGame?.id, activeGame?.ownerRole) {
+        PlayerDisplay.forPlayer(player, activeGame)
+    }
+    val border = when {
+        isSwapSelected -> MafiaCrimsonLight
+        display.isHidden -> MafiaCrimsonLight
+        display.isOwner -> MafiaGold
+        else -> MafiaBorder
+    }
     Surface(
         color = if (dimmed) MafiaCardBg.copy(alpha = 0.4f) else MafiaCardBg,
         shape = RoundedCornerShape(10.dp),
@@ -168,25 +182,46 @@ private fun SeatRow(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(if (isSwapSelected) MafiaCrimson else MafiaGold.copy(alpha = 0.85f)),
+                    .background(
+                        when {
+                            isSwapSelected -> MafiaCrimson
+                            display.isHidden -> MafiaCrimson
+                            else -> MafiaGold.copy(alpha = 0.85f)
+                        }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = if (seatNumber > 0) seatNumber.toString() else "—",
-                    color = Color.Black,
+                    color = if (isSwapSelected || display.isHidden) Color.White else Color.Black,
                     fontWeight = FontWeight.Black,
                     fontSize = 18.sp
                 )
             }
             Spacer(Modifier.width(8.dp))
-            // Player name
-            Text(
-                text = player.name,
-                color = if (dimmed) TextMutedDark else TextPrimaryDark,
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp,
-                modifier = Modifier.weight(1f)
-            )
+            // Player name (safe display)
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (display.isOwner) {
+                    Text(
+                        text = if (display.isHidden) "🔪" else "👑",
+                        fontSize = 16.sp
+                    )
+                    Spacer(Modifier.width(4.dp))
+                }
+                Text(
+                    text = display.displayName,
+                    color = when {
+                        dimmed -> TextMutedDark
+                        display.isHidden -> MafiaCrimsonLight
+                        else -> TextPrimaryDark
+                    },
+                    fontWeight = if (display.isOwner) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 14.sp
+                )
+            }
             // Move up
             IconButton(
                 onClick = onMoveUp,

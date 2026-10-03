@@ -26,9 +26,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.local.GameEntity
 import com.example.data.local.PlayerEntity
 import com.example.data.local.TargetEntity
 import com.example.ui.theme.*
+import com.example.ui.util.PlayerDisplay
 
 /**
  * Linear 4-per-row grid of active players with seat numbers and
@@ -45,6 +47,7 @@ fun PlayerListTableScreen(
     players: List<PlayerEntity>,
     targets: List<TargetEntity>,
     activeSpeakersCount: Int,
+    activeGame: GameEntity? = null,
     onStartTargeting: () -> Unit,
     onPlayerTap: (PlayerEntity) -> Unit = {}
 ) {
@@ -115,6 +118,7 @@ fun PlayerListTableScreen(
                     ActivePlayerGrid(
                         players = active,
                         targets = targets,
+                        activeGame = activeGame,
                         onPlayerTap = onPlayerTap
                     )
                 }
@@ -139,6 +143,7 @@ fun PlayerListTableScreen(
 private fun ActivePlayerGrid(
     players: List<PlayerEntity>,
     targets: List<TargetEntity>,
+    activeGame: GameEntity?,
     onPlayerTap: (PlayerEntity) -> Unit
 ) {
     // 4 per row. For each player, look up who they targeted in the
@@ -153,16 +158,20 @@ private fun ActivePlayerGrid(
                     ActivePlayerTile(
                         player = p,
                         seatNumber = players.indexOf(p) + 1,
-                        targetNames = remember(targets, p.id) {
+                        targetNames = remember(targets, p.id, players) {
                             targets
                                 .filter { it.sourcePlayerId == p.id }
-                                .mapNotNull { t -> players.firstOrNull { it.id == t.targetPlayerId }?.name }
+                                .mapNotNull { t ->
+                                    val tp = players.firstOrNull { it.id == t.targetPlayerId }
+                                    tp?.let { PlayerDisplay.forPlayer(it, activeGame).displayName }
+                                }
                                 .take(3)
                         },
                         totalTargets = remember(targets, p.id) {
                             targets.count { it.sourcePlayerId == p.id }
                         },
                         onClick = { onPlayerTap(p) },
+                        activeGame = activeGame,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -179,12 +188,22 @@ private fun ActivePlayerTile(
     targetNames: List<String>,
     totalTargets: Int,
     onClick: () -> Unit,
+    activeGame: GameEntity?,
     modifier: Modifier = Modifier
 ) {
+    val display = remember(player.id, activeGame?.id, activeGame?.ownerRole) {
+        PlayerDisplay.forPlayer(player, activeGame)
+    }
+    val isOwner = display.isOwner
+    val borderColor = when {
+        display.isHidden -> MafiaCrimsonLight  // stealth owner: red border
+        isOwner -> MafiaGold                    // citizen owner: gold border
+        else -> MafiaBorder
+    }
     Surface(
         color = MafiaCardBg,
         shape = RoundedCornerShape(10.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MafiaBorder),
+        border = androidx.compose.foundation.BorderStroke(1.5.dp, borderColor),
         modifier = modifier
             .clickable(onClick = onClick)
             .padding(vertical = 2.dp)
@@ -195,28 +214,36 @@ private fun ActivePlayerTile(
                 .padding(horizontal = 6.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Crown badge for owner
+            if (isOwner) {
+                Text(
+                    text = if (display.isHidden) "🔪" else "👑",
+                    fontSize = 14.sp
+                )
+                Spacer(Modifier.height(2.dp))
+            }
             // Seat number on top
             Box(
                 modifier = Modifier
                     .size(28.dp)
                     .clip(CircleShape)
-                    .background(MafiaGold),
+                    .background(if (display.isHidden) MafiaCrimson else MafiaGold),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = seatNumber.toString(),
-                    color = Color.Black,
+                    color = if (display.isHidden) Color.White else Color.Black,
                     fontWeight = FontWeight.Black,
                     fontSize = 14.sp
                 )
             }
             Spacer(Modifier.height(4.dp))
-            // Player name (big and clear)
+            // Player name (big and clear) — hidden name shown as code
             Text(
-                text = player.name,
-                color = TextPrimaryDark,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
+                text = display.displayName,
+                color = if (display.isHidden) MafiaCrimsonLight else TextPrimaryDark,
+                fontWeight = if (display.isHidden) FontWeight.Bold else FontWeight.SemiBold,
+                fontSize = if (display.isHidden) 12.sp else 14.sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
