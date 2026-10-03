@@ -300,6 +300,20 @@ fun PlayerListTableScreen(
                 }
             }
         }
+
+        // End Day Report Dialog
+        if (showEndDayReportDialog) {
+            EndDayReportDialog(
+                players = players,
+                targets = targets,
+                currentStageIndex = currentStageIndex,
+                onConfirm = {
+                    showEndDayReportDialog = false
+                    onEndDay()
+                },
+                onDismiss = { showEndDayReportDialog = false }
+            )
+        }
     }
 }
 
@@ -638,20 +652,6 @@ private fun HeaderCard(
                     )
                 }
             }
-        }
-
-        // End Day Report Dialog
-        if (showEndDayReportDialog) {
-            EndDayReportDialog(
-                players = players,
-                targets = targets,
-                currentStageIndex = currentStageIndex,
-                onConfirm = {
-                    showEndDayReportDialog = false
-                    onEndDay()
-                },
-                onDismiss = { showEndDayReportDialog = false }
-            )
         }
     }
 }
