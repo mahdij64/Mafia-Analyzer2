@@ -41,7 +41,7 @@ fun SeatLayoutScreen(
     onMove: (PlayerEntity, Boolean) -> Unit
 ) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-        var pendingSwapFrom by remember { mutableStateOf<Long?>(null }
+        var pendingSwapFrom by remember { mutableStateOf<Long?>(null) }
 
         val active = players.filter { !it.isEliminated }
         val eliminated = players.filter { it.isEliminated }
