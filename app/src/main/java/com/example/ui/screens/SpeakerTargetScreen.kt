@@ -61,7 +61,7 @@ private val QUICK_NOTE_TAGS = listOf(
 fun SpeakerTargetScreen(
     speaker: PlayerEntity,
     allPlayers: List<PlayerEntity>,
-    alreadyTargetedIds: Set<Long>, // who already targets the speaker (read-only info, optional)
+    alreadyTargetedIds: Set<Long> = emptySet(), // who already targets the speaker (read-only info, optional)
     initialSelectedTargetIds: Set<Long> = emptySet(),
     initialNoteText: String = "",
     initialNoteTags: Set<String> = emptySet(),

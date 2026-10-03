@@ -95,6 +95,7 @@ fun MainScreen(viewModel: MafiaViewModel) {
             SpeakerTargetScreen(
                 speaker = activeSpeaker,
                 allPlayers = players,
+                alreadyTargetedIds = emptySet(),
                 initialSelectedTargetIds = speakerSelections[activeSpeaker.id] ?: emptySet(),
                 initialNoteText = speakerNoteTexts[activeSpeaker.id] ?: "",
                 initialNoteTags = speakerNoteTagsMap[activeSpeaker.id] ?: emptySet(),
