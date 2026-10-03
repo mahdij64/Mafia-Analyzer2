@@ -56,7 +56,7 @@ private val QUICK_NOTE_TAGS = listOf(
  *  4. Optional notes (quick tags + free text) at the bottom.
  *  5. Buttons: "ثبت و بعدی" (save + advance to next player) and "بازگشت" (back).
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun SpeakerTargetScreen(
     speaker: PlayerEntity,
