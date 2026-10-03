@@ -98,10 +98,6 @@ fun MainScreen(viewModel: MafiaViewModel) {
                 initialSelectedTargetIds = speakerSelections[activeSpeaker.id] ?: emptySet(),
                 initialNoteText = speakerNoteTexts[activeSpeaker.id] ?: "",
                 initialNoteTags = speakerNoteTagsMap[activeSpeaker.id] ?: emptySet(),
-                alreadyTargetedIds = emptySet(),
-                initialSelectedTargetIds = emptySet(),
-                initialNoteText = "",
-                initialNoteTags = emptySet(),
                 isLastPlayer = speakerFlowQueue.size == 1,
                 onBack = { speakerFlowQueue = emptyList() },
                 onSaveAndNext = { targetIds, noteText, noteTags ->
