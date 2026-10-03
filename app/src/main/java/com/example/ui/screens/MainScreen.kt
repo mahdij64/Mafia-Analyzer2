@@ -74,8 +74,8 @@ fun MainScreen(viewModel: MafiaViewModel) {
 
         val stage = GameStage.getStage(currentStageIndex)
         val isTableScreen = currentDestination == MainDestination.TARGETS
-        var showMenusOnTable by remember { mutableStateOf(false) }
-        val shouldShowMenus = !isTableScreen || showMenusOnTable
+        // Bottom navigation is always shown now (no edge-swipe hide).
+        val shouldShowMenus = true
 
         // Speaker-targeting flow: when set, full-screen SpeakerTargetScreen
         // takes over the UI until the user saves-and-advances through all
@@ -241,92 +241,25 @@ fun MainScreen(viewModel: MafiaViewModel) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(
-                        if (isTableScreen && !shouldShowMenus) PaddingValues(0.dp) else paddingValues
-                    )
-                    .pointerInput(isTableScreen) {
-                        if (isTableScreen) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    val event = awaitPointerEvent(pass = PointerEventPass.Initial)
-                                    val pos = event.changes.firstOrNull()?.position
-                                    if (pos != null) {
-                                        val nearEdge = pos.y < 80f || pos.y > (size.height - 80f)
-                                        if (nearEdge && !showMenusOnTable) {
-                                            showMenusOnTable = true
-                                        } else if (!nearEdge && showMenusOnTable) {
-                                            showMenusOnTable = false
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    .padding(paddingValues)
             ) {
                 when (currentDestination) {
                     MainDestination.TARGETS -> Box(modifier = Modifier.fillMaxSize()) {
-                        CircularTableTargetScreen(
-                            currentStageIndex = currentStageIndex,
-                            unlockedStageIndex = maxUnlockedStageIndex,
-                            activeGame = activeGame,
+                        // Simplified player list view for the table screen.
+                        // The legacy CircularTableTargetScreen has been
+                        // removed; target selection now happens one speaker
+                        // at a time via the SpeakerTargetScreen flow.
+                        PlayerListTableScreen(
                             players = players,
-                            allTargets = targets,
-                            allNotes = notes,
-                            scores = scores,
-                            isStealthMafiaMode = isStealthMafiaMode,
-                            secretNotes = secretNotes,
-                            stealthConflicts = stealthAnalysis.first,
-                            stealthTactics = stealthAnalysis.second,
-                            onToggleStealthMode = { viewModel.toggleStealthMafiaMode() },
-                            onStageSelected = { viewModel.setStage(it) },
-                            onSaveTargets = { src, tgts, isManual -> viewModel.saveTargets(src, tgts, isManual) },
-                            onFinishStageAndAdvance = { stg -> viewModel.finishStageAndAdvance(stg) },
-                            onAddQuickNote = { pid, tag, freeText -> viewModel.addQuickTagNote(pid, tag, freeText) },
-                            onDeleteNote = { noteId -> viewModel.deleteNote(noteId) },
-                            onAddSecretNote = { pid, content, sugg -> viewModel.addSecretNote(pid, content, sugg) },
-                            onDeleteSecretNote = { noteId -> viewModel.deleteSecretNote(noteId) },
-                            onSwapPlayers = { p1, p2 -> viewModel.swapPlayers(p1, p2) },
-                            onReorderPlayers = { list -> viewModel.reorderPlayers(list) },
-                            onRenamePlayer = { pid, newName -> viewModel.renamePlayer(pid, newName) },
-                            onTogglePlayerEliminated = { viewModel.togglePlayerEliminated(it) }
+                            targets = targets,
+                            activeSpeakersCount = players.count { !it.isEliminated },
+                            onStartTargeting = {
+                                val activeSpeakers = players.filter { !it.isEliminated }
+                                if (activeSpeakers.isNotEmpty()) {
+                                    speakerFlowQueue = activeSpeakers
+                                }
+                            }
                         )
-
-                        // Discreet toggle button for touchscreen / mouse to easily toggle menus on table screen
-                        FloatingActionButton(
-                            onClick = { showMenusOnTable = !showMenusOnTable },
-                            containerColor = if (showMenusOnTable) MafiaGold else MafiaCardBg.copy(alpha = 0.85f),
-                            contentColor = if (showMenusOnTable) Color.Black else MafiaGold,
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(end = 8.dp, top = 8.dp)
-                                .size(34.dp)
-                                .testTag("toggle_table_menus_btn")
-                        ) {
-                            Icon(
-                                imageVector = if (showMenusOnTable) Icons.Default.FullscreenExit else Icons.Default.Menu,
-                                contentDescription = if (showMenusOnTable) "مخفی‌سازی منوها" else "نمایش منوها",
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        // Start speaker-targeting flow button (bottom-start).
-                        // When tapped, the entire screen is replaced with
-                        // SpeakerTargetScreen for each active player in turn.
-                        val activeSpeakers = players.filter { !it.isEliminated }
-                        if (activeSpeakers.isNotEmpty()) {
-                            ExtendedFloatingActionButton(
-                                onClick = { speakerFlowQueue = activeSpeakers },
-                                containerColor = MafiaCrimson,
-                                contentColor = Color.White,
-                                icon = { Icon(Icons.Default.RecordVoiceOver, contentDescription = null) },
-                                text = { Text("شروع ثبت تارگت سخنران") },
-                                modifier = Modifier
-                                    .align(Alignment.BottomStart)
-                                    .padding(start = 12.dp, bottom = 12.dp)
-                                    .testTag("start_speaker_targeting_btn")
-                            )
-                        }
                     }
 
                     MainDestination.ANALYSIS -> AnalysisContainerScreen(
