@@ -104,7 +104,7 @@ fun PlayerListTableScreen(
                     isEditMode = false
                 },
                 onStartTargeting = onStartTargeting,
-                onEndDay = onEndDay,
+                onShowEndDayReport = { showEndDayReportDialog = true },
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
             )
 
@@ -528,7 +528,7 @@ private fun HeaderCard(
     onToggleEdit: () -> Unit,
     onToggleNightKill: () -> Unit,
     onStartTargeting: () -> Unit,
-    onEndDay: () -> Unit,
+    onShowEndDayReport: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -618,7 +618,7 @@ private fun HeaderCard(
             if (showEndDayButton) {
                 Spacer(Modifier.height(8.dp))
                 Button(
-                    onClick = { showEndDayReportDialog = true },
+                    onClick = onShowEndDayReport,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SuspicionGreen,
                         contentColor = Color.White
