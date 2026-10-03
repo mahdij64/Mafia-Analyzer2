@@ -34,6 +34,19 @@ fun RelationshipMapScreen(
 ) {
     val stage = GameStage.getStage(currentStageIndex)
     val playerMap = players.associateBy { it.id }
+    // Stealth display names for reports (owner with non-citizen role → "کد XX")
+    val displayNameMap = remember(players) {
+        players.associate { p ->
+            val isOwner = p.isOwner
+            val isHidden = isOwner && p.knownRole != null && p.knownRole != "CITIZEN"
+            val name = if (isHidden) {
+                val num = (p.id.coerceAtLeast(0L) % 100L).toInt()
+                "کد ${num.toString().padStart(2, '0')}"
+            } else p.name
+            p.id to name
+        }
+    }
+    fun dn(id: Long): String = displayNameMap[id] ?: playerMap[id]?.name ?: "?"
 
     // Targets for current stage
     val stageTargets = allTargets.filter { it.stageIndex == currentStageIndex }
@@ -122,8 +135,8 @@ fun RelationshipMapScreen(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         mutualConflicts.forEach { (p1, p2) ->
-                            val n1 = playerMap[p1]?.name ?: "?"
-                            val n2 = playerMap[p2]?.name ?: "?"
+                            val n1 = dn(p1)
+                            val n2 = dn(p2)
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
                                 color = MafiaCrimson.copy(alpha = 0.15f),
@@ -165,9 +178,9 @@ fun RelationshipMapScreen(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         targetChains.forEach { (pA, pB, pC) ->
-                            val nA = playerMap[pA]?.name ?: "?"
-                            val nB = playerMap[pB]?.name ?: "?"
-                            val nC = playerMap[pC]?.name ?: "?"
+                            val nA = dn(pA)
+                            val nB = dn(pB)
+                            val nC = dn(pC)
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
                                 color = MafiaSurfaceVariant,
@@ -206,14 +219,14 @@ fun RelationshipMapScreen(
                             if (dropped.isNotEmpty() || added.isNotEmpty()) {
                                 val parts = mutableListOf<String>()
                                 if (added.isNotEmpty()) {
-                                    val addedNames = added.mapNotNull { playerMap[it]?.name }.joinToString("، ")
+                                    val addedNames = added.joinToString("، ") { dn(it) }
                                     parts.add("افزودن تارگت به ($addedNames)")
                                 }
                                 if (dropped.isNotEmpty()) {
-                                    val droppedNames = dropped.mapNotNull { playerMap[it]?.name }.joinToString("، ")
+                                    val droppedNames = dropped.joinToString("، ") { dn(it) }
                                     parts.add("برداشتن تارگت از ($droppedNames)")
                                 }
-                                positionChanges.add("${p.name}: ${parts.joinToString(" و ")}")
+                                positionChanges.add("${dn(p.id)}: ${parts.joinToString(" و ")}")
                             }
                         }
 
@@ -278,7 +291,7 @@ fun RelationshipMapScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = player.name + if (player.isEliminated) " 💀" else "",
+                            text = dn(player.id) + if (player.isEliminated) " 💀" else "",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = TextPrimaryDark
@@ -324,7 +337,7 @@ fun RelationshipMapScreen(
                         if (outgoingTargets.isEmpty()) {
                             Text(text = "هیچ‌کس", fontSize = 13.sp, color = TextMutedDark)
                         } else {
-                            val targetsNames = outgoingTargets.mapNotNull { playerMap[it.targetPlayerId]?.name }.joinToString("، ")
+                            val targetsNames = outgoingTargets.joinToString("، ") { dn(it.targetPlayerId) }
                             Text(text = targetsNames, fontSize = 13.sp, color = TextPrimaryDark)
                         }
                     }
@@ -343,7 +356,7 @@ fun RelationshipMapScreen(
                         if (incomingTargets.isEmpty()) {
                             Text(text = "هیچ‌کس", fontSize = 13.sp, color = TextMutedDark)
                         } else {
-                            val attackers = incomingTargets.mapNotNull { playerMap[it.sourcePlayerId]?.name }.joinToString("، ")
+                            val attackers = incomingTargets.joinToString("، ") { dn(it.sourcePlayerId) }
                             Text(text = attackers, fontSize = 13.sp, color = TextPrimaryDark)
                         }
                     }

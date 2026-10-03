@@ -37,7 +37,21 @@ data class PlayerScoreAnalysis(
     val isEliminated: Boolean = false,
     val isOwner: Boolean = false,
     val knownRole: String? = null
-)
+) {
+    /**
+     * Name safe for display in reports when the screen might be seen
+     * by neighbours. If the local user is the owner and has a
+     * non-citizen role, the real name is replaced with a numeric code
+     * (e.g. "کد ۱۱"). Otherwise returns the real [playerName].
+     */
+    val displayName: String
+        get() = if (isOwner && knownRole != null && knownRole != "CITIZEN") {
+            val num = (playerId.coerceAtLeast(0L) % 100L).toInt()
+            "کد ${num.toString().padStart(2, '0')}"
+        } else {
+            playerName
+        }
+}
 
 object SuspicionCalculator {
 

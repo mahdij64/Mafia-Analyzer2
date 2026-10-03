@@ -57,8 +57,6 @@ fun SpeechCoachScreen(
     val haptic = LocalHapticFeedback.current
 
     var showCopiedToast by remember { mutableStateOf(false) }
-    var showScenarioOwnerDialog by remember { mutableStateOf(false) }
-    var showEliminatedDialog by remember { mutableStateOf(false) }
 
     val ownerPlayer = remember(players, activeGame) {
         players.firstOrNull { it.isOwner || (activeGame?.ownerPlayerId != null && it.id == activeGame.ownerPlayerId) }
@@ -129,13 +127,20 @@ fun SpeechCoachScreen(
                                 "INDEPENDENT" -> "مستقل 🎭"
                                 else -> "شهروند 🛡️"
                             }
+                            // Use stealth display name for owner in reports
+                            val ownerDisplayName = if (ownerRole != "CITIZEN" && ownerPlayer != null) {
+                                val num = (ownerPlayer.id.coerceAtLeast(0L) % 100L).toInt()
+                                "کد ${num.toString().padStart(2, '0')}"
+                            } else {
+                                ownerPlayer?.name ?: "تعیین نشده"
+                            }
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
                                 color = roleBadgeColor,
                                 border = BorderStroke(0.5.dp, MafiaGold)
                             ) {
                                 Text(
-                                    text = "${ownerPlayer?.name ?: "تعیین نشده"} ($roleLabel)",
+                                    text = "$ownerDisplayName ($roleLabel)",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = Color.White,
@@ -144,140 +149,12 @@ fun SpeechCoachScreen(
                             }
                         }
 
-                        // Edit Role Button
-                        OutlinedButton(
-                            onClick = { showScenarioOwnerDialog = true },
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, MafiaGold.copy(alpha = 0.7f)),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            Icon(Icons.Default.Edit, contentDescription = null, tint = MafiaGold, modifier = Modifier.size(13.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("تغییر هویت / سناریو", fontSize = 10.sp, color = MafiaGold)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // Quick status summary
-                    val livingCount = players.count { !it.isEliminated }
-                    val deadCount = players.count { it.isEliminated }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "🟢 $livingCount بازیکن زنده | 💀 $deadCount بازیکن حذف‌شده",
-                            fontSize = 11.sp,
-                            color = TextSecondaryDark
-                        )
-
-                        TextButton(
-                            onClick = { showEliminatedDialog = true },
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text(
-                                text = "مدیریت کشته‌ها 💀",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MafiaCrimsonLight
-                            )
-                        }
                     }
                 }
             }
         }
 
-        // MAFIA TEAMMATES SELECTION SECTION (CRITICAL REQUIREMENT)
-        if (ownerRole == "MAFIA") {
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF261217)),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, MafiaCrimson),
-                    modifier = Modifier.fillMaxWidth().testTag("mafia_teammates_section")
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "🗡️ همکاران و یاران مافیای شما:",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFF8A80)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "چون شما مافیا هستید، یاران خود را از لیست زیر تیک بزنید تا سیستم در تنظیم نطق، پوشش‌ها و تارگت‌های فیک دقیق‌تر شما را راهنمایی کند:",
-                            fontSize = 11.sp,
-                            color = TextSecondaryDark
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        val availableOtherPlayers = players.filter { it.id != ownerPlayer?.id && !it.isEliminated }
-                        if (availableOtherPlayers.isEmpty()) {
-                            Text("بازیکن دیگری در بازی وجود ندارد.", fontSize = 11.sp, color = TextMutedDark)
-                        } else {
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                items(availableOtherPlayers, key = { it.id }) { p ->
-                                    val isTeammate = currentTeammateIds.contains(p.id)
-                                    val seat = players.indexOfFirst { it.id == p.id } + 1
-                                    FilterChip(
-                                        selected = isTeammate,
-                                        onClick = {
-                                            val newSet = currentTeammateIds.toMutableSet()
-                                            if (isTeammate) {
-                                                newSet.remove(p.id)
-                                            } else {
-                                                newSet.add(p.id)
-                                            }
-                                            onUpdateMafiaTeammates(newSet)
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        },
-                                        label = {
-                                            Text(
-                                                text = if (isTeammate) "🗡️ $seat. ${p.name}" else "$seat. ${p.name}",
-                                                fontSize = 11.sp,
-                                                fontWeight = if (isTeammate) FontWeight.Bold else FontWeight.Normal
-                                            )
-                                        },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = MafiaCrimson,
-                                            selectedLabelColor = Color.White,
-                                            containerColor = MafiaSurfaceVariant,
-                                            labelColor = TextPrimaryDark
-                                        )
-                                    )
-                                }
-                            }
-                        }
-
-                        if (guide.mafiaTeammatesInfo != null && guide.mafiaTeammatesInfo.teammatesNames.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MafiaCardBg.copy(alpha = 0.6f),
-                                border = BorderStroke(0.5.dp, MafiaCrimson.copy(alpha = 0.5f)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = "💡 تاکتیک پوشش یاران: ${guide.mafiaTeammatesInfo.tacticalCoveringAdvice}",
-                                    fontSize = 10.sp,
-                                    color = Color(0xFFFFCDD2),
-                                    modifier = Modifier.padding(8.dp),
-                                    lineHeight = 15.sp
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // (Mafia teammates selection moved to Settings tab)
 
         // FULL COLLOQUIAL SPEECH SCRIPT (خروجی نهایی: متن کامل نطق به زبان عامیانه)
         item {
@@ -477,7 +354,7 @@ fun SpeechCoachScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "${tip.playerName}" + if (tip.isTeammate) " (🗡️ هم‌تیمی شما)" else "",
+                                            text = "${tip.displayName}" + if (tip.isTeammate) " (🗡️ هم‌تیمی شما)" else "",
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = if (tip.isTeammate) MafiaCrimsonLight else TextPrimaryDark
@@ -568,287 +445,5 @@ fun SpeechCoachScreen(
                 }
             }
         }
-    }
-
-    // Dialog for Scenario & Owner Identity Setup
-    if (showScenarioOwnerDialog) {
-        var editCitizenCount by remember { mutableIntStateOf(activeGame?.citizenCount ?: 4) }
-        var editMafiaCount by remember { mutableIntStateOf(activeGame?.mafiaCount ?: 3) }
-        var editIndependentCount by remember { mutableIntStateOf(activeGame?.independentCount ?: 1) }
-        var editOwnerPlayerId by remember { mutableStateOf<Long?>(ownerPlayer?.id) }
-        var editOwnerRole by remember { mutableStateOf(ownerRole) }
-
-        AlertDialog(
-            onDismissRequest = { showScenarioOwnerDialog = false },
-            containerColor = MafiaCardBg,
-            shape = RoundedCornerShape(16.dp),
-            title = {
-                Text(
-                    text = "👑 تنظیم سناریو و هویت شما",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = MafiaGold
-                )
-            },
-            text = {
-                Column(modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)) {
-                    Text(
-                        text = "ترکیب سناریوی بازی و هویت خود را مشخص کنید تا سیستم دقیق‌ترین نطق و تحلیل را آماده کند:",
-                        fontSize = 11.sp,
-                        color = TextSecondaryDark
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Scenario counters
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MafiaSurfaceVariant,
-                        border = BorderStroke(1.dp, MafiaBorder),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(8.dp)) {
-                            Text("⚙️ تعداد نقش‌ها در سناریو:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MafiaGold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Citizen
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("🛡️ شهروند", fontSize = 10.sp, color = TextSecondaryDark)
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        IconButton(onClick = { if (editCitizenCount > 0) editCitizenCount-- }, modifier = Modifier.size(24.dp)) {
-                                            Text("-", fontSize = 16.sp, color = MafiaGold, fontWeight = FontWeight.Bold)
-                                        }
-                                        Text("$editCitizenCount", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        IconButton(onClick = { editCitizenCount++ }, modifier = Modifier.size(24.dp)) {
-                                            Text("+", fontSize = 16.sp, color = MafiaGold, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-                                // Mafia
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("🗡️ مافیا", fontSize = 10.sp, color = TextSecondaryDark)
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        IconButton(onClick = { if (editMafiaCount > 0) editMafiaCount-- }, modifier = Modifier.size(24.dp)) {
-                                            Text("-", fontSize = 16.sp, color = MafiaCrimson, fontWeight = FontWeight.Bold)
-                                        }
-                                        Text("$editMafiaCount", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        IconButton(onClick = { editMafiaCount++ }, modifier = Modifier.size(24.dp)) {
-                                            Text("+", fontSize = 16.sp, color = MafiaCrimson, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-                                // Independent
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("🎭 مستقل", fontSize = 10.sp, color = TextSecondaryDark)
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        IconButton(onClick = { if (editIndependentCount > 0) editIndependentCount-- }, modifier = Modifier.size(24.dp)) {
-                                            Text("-", fontSize = 16.sp, color = MafiaGold, fontWeight = FontWeight.Bold)
-                                        }
-                                        Text("$editIndependentCount", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        IconButton(onClick = { editIndependentCount++ }, modifier = Modifier.size(24.dp)) {
-                                            Text("+", fontSize = 16.sp, color = MafiaGold, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Owner Player Selection
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFF231626),
-                        border = BorderStroke(1.dp, MafiaGold.copy(alpha = 0.5f)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(8.dp)) {
-                            Text("👑 شما کدام بازیکن هستید؟", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MafiaGold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                items(players, key = { it.id }) { p ->
-                                    val isMe = editOwnerPlayerId == p.id
-                                    val seat = players.indexOfFirst { it.id == p.id } + 1
-                                    Surface(
-                                        onClick = { editOwnerPlayerId = p.id },
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = if (isMe) MafiaGold else MafiaSurfaceVariant,
-                                        modifier = Modifier.height(28.dp)
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(horizontal = 6.dp)
-                                        ) {
-                                            Text(
-                                                text = "$seat. ${p.name}" + if (isMe) " (👑 من)" else "",
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isMe) Color.Black else TextPrimaryDark
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("نقش شما در بازی چیست؟", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MafiaGold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                val roleOptions = listOf(
-                                    Triple("CITIZEN", "🛡️ شهروند", Color(0xFF1976D2)),
-                                    Triple("MAFIA", "🗡️ مافیا", MafiaCrimson),
-                                    Triple("INDEPENDENT", "🎭 مستقل", Color(0xFFFFA000))
-                                )
-                                roleOptions.forEach { (rKey, rLabel, rColor) ->
-                                    val isSel = editOwnerRole == rKey
-                                    Surface(
-                                        onClick = { editOwnerRole = rKey },
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = if (isSel) rColor else MafiaSurfaceVariant,
-                                        modifier = Modifier.weight(1f).height(30.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = rLabel,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSel) Color.White else TextSecondaryDark
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onUpdateGameScenarioAndOwner(
-                            editCitizenCount,
-                            editMafiaCount,
-                            editIndependentCount,
-                            editOwnerPlayerId,
-                            editOwnerRole
-                        )
-                        showScenarioOwnerDialog = false
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MafiaGold)
-                ) {
-                    Text("ذخیره تنظیمات", color = Color.Black, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showScenarioOwnerDialog = false }) {
-                    Text("انصراف", color = TextSecondaryDark)
-                }
-            }
-        )
-    }
-
-    // Dialog for Managing Eliminated / Killed Players
-    if (showEliminatedDialog) {
-        AlertDialog(
-            onDismissRequest = { showEliminatedDialog = false },
-            containerColor = MafiaCardBg,
-            shape = RoundedCornerShape(16.dp),
-            title = {
-                Text(
-                    text = "💀 مدیریت بازیکنان حذف‌شده (کشته‌های بازی)",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = MafiaCrimsonLight
-                )
-            },
-            text = {
-                Column(modifier = Modifier.fillMaxWidth().heightIn(max = 380.dp)) {
-                    Text(
-                        text = "بازیکنانی که در شب یا روز حذف شده‌اند را علامت بزنید تا الگوریتم و نطق بازی به‌روز شوند:",
-                        fontSize = 11.sp,
-                        color = TextSecondaryDark
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(players, key = { it.id }) { p ->
-                            val seat = players.indexOfFirst { it.id == p.id } + 1
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (p.isEliminated) Color(0xFF26181B) else MafiaSurfaceVariant,
-                                border = BorderStroke(1.dp, if (p.isEliminated) MafiaCrimsonDark else MafiaBorder),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(text = if (p.isEliminated) "💀" else "🟢", fontSize = 13.sp)
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Column {
-                                            Text(
-                                                text = "صندلی $seat: ${p.name}",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 12.sp,
-                                                color = if (p.isEliminated) TextMutedDark else TextPrimaryDark
-                                            )
-                                            Text(
-                                                text = if (p.isEliminated) "حذف‌شده از بازی" else "در حال بازی",
-                                                fontSize = 10.sp,
-                                                color = if (p.isEliminated) MafiaCrimsonLight else MafiaGreen
-                                            )
-                                        }
-                                    }
-
-                                    Button(
-                                        onClick = {
-                                            onTogglePlayerEliminated(p)
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (p.isEliminated) MafiaGreen else MafiaCrimson
-                                        ),
-                                        shape = RoundedCornerShape(6.dp),
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                        modifier = Modifier.height(28.dp)
-                                    ) {
-                                        Text(
-                                            text = if (p.isEliminated) "بازگشت 🔄" else "کشته شد 💀",
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showEliminatedDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = MafiaGold)
-                ) {
-                    Text("بستن", color = Color.Black, fontWeight = FontWeight.Bold)
-                }
-            }
-        )
     }
 }

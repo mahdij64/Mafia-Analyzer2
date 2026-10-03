@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.sp
 import com.example.data.local.GameEntity
 import com.example.data.local.PlayerEntity
 import com.example.ui.theme.*
-import com.example.ui.util.PlayerDisplay
 
 /**
  * Visual seat-layout editor. Lists active players in seat order with
@@ -156,13 +155,10 @@ private fun SeatRow(
     activeGame: GameEntity?,
     dimmed: Boolean = false
 ) {
-    val display = remember(player.id, activeGame?.id, activeGame?.ownerRole) {
-        PlayerDisplay.forPlayer(player, activeGame)
-    }
+    val isOwner = activeGame?.ownerPlayerId == player.id
     val border = when {
         isSwapSelected -> MafiaCrimsonLight
-        display.isHidden -> MafiaCrimsonLight
-        display.isOwner -> MafiaGold
+        isOwner -> MafiaGold
         else -> MafiaBorder
     }
     Surface(
@@ -185,7 +181,6 @@ private fun SeatRow(
                     .background(
                         when {
                             isSwapSelected -> MafiaCrimson
-                            display.isHidden -> MafiaCrimson
                             else -> MafiaGold.copy(alpha = 0.85f)
                         }
                     ),
@@ -193,32 +188,29 @@ private fun SeatRow(
             ) {
                 Text(
                     text = if (seatNumber > 0) seatNumber.toString() else "—",
-                    color = if (isSwapSelected || display.isHidden) Color.White else Color.Black,
+                    color = if (isSwapSelected) Color.White else Color.Black,
                     fontWeight = FontWeight.Black,
                     fontSize = 18.sp
                 )
             }
             Spacer(Modifier.width(8.dp))
-            // Player name (safe display)
+            // Player name — always real name in the seat-layout editor
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (display.isOwner) {
-                    Text(
-                        text = if (display.isHidden) "🔪" else "👑",
-                        fontSize = 16.sp
-                    )
+                if (isOwner) {
+                    Text(text = "👑", fontSize = 16.sp)
                     Spacer(Modifier.width(4.dp))
                 }
                 Text(
-                    text = display.displayName,
+                    text = player.name,
                     color = when {
                         dimmed -> TextMutedDark
-                        display.isHidden -> MafiaCrimsonLight
+                        isOwner -> MafiaGold
                         else -> TextPrimaryDark
                     },
-                    fontWeight = if (display.isOwner) FontWeight.Bold else FontWeight.Medium,
+                    fontWeight = if (isOwner) FontWeight.Bold else FontWeight.Medium,
                     fontSize = 14.sp
                 )
             }

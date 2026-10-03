@@ -1132,10 +1132,10 @@ fun TargetRecordingScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(
-                                        text = "صندلی $seat: ${item.playerName}",
+                                        text = "صندلی $seat: ${item.displayName}",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp,
-                                        color = TextPrimaryDark
+                                        color = if (item.isOwner && item.displayName != item.playerName) MafiaCrimsonLight else TextPrimaryDark
                                     )
                                     Text(
                                         text = "دلیل: $topReason",

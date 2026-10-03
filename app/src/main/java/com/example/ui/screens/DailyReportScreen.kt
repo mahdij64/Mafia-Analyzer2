@@ -49,7 +49,8 @@ fun DailyReportScreen(
         scores
             .filter {
                 if (searchQuery.isBlank()) true
-                else it.playerName.contains(searchQuery.trim(), ignoreCase = true)
+                else it.displayName.contains(searchQuery.trim(), ignoreCase = true) ||
+                     it.playerName.contains(searchQuery.trim(), ignoreCase = true)
             }
             .filter {
                 when (selectedFilter) {
@@ -115,7 +116,7 @@ fun DailyReportScreen(
                                 sb.appendLine("────────────────────")
                                 sb.appendLine("📊 رده‌بندی سوءظن بازیکنان:")
                                 scores.sortedByDescending { it.totalScore }.forEachIndexed { idx, s ->
-                                    sb.appendLine("${idx + 1}. ${s.playerName}: ${s.totalScore}/100 (${s.statusLabel})")
+                                    sb.appendLine("${idx + 1}. ${s.displayName}: ${s.totalScore}/100 (${s.statusLabel})")
                                     if (s.positiveFactors.isNotEmpty()) {
                                         sb.appendLine("   ⚠️ فاکتورها: " + s.positiveFactors.joinToString("، ") { it.title })
                                     }
@@ -231,8 +232,9 @@ fun DailyReportScreen(
         } else {
             items(filteredScores, key = { it.playerId }) { analysis ->
                 val isExpanded = expandedPlayerId == analysis.playerId
+                val rank = scores.sortedByDescending { it.totalScore }.indexOfFirst { it.playerId == analysis.playerId } + 1
                 DailyReportPlayerCard(
-                    rank = scores.sortedByDescending { it.totalScore }.indexOfFirst { it.playerId == analysis.playerId } + 1,
+                    rank = rank,
                     analysis = analysis,
                     isExpanded = isExpanded,
                     onToggleExpand = {
@@ -320,10 +322,10 @@ private fun DailyReportPlayerCard(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = analysis.playerName,
+                                text = analysis.displayName,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp,
-                                color = TextPrimaryDark
+                                color = if (analysis.isOwner && analysis.displayName != analysis.playerName) MafiaCrimsonLight else TextPrimaryDark
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             StatusChip(label = analysis.statusLabel, score = analysis.totalScore)

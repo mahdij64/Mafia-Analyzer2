@@ -434,10 +434,10 @@ private fun PlayerSuspectCard(
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = analysis.playerName,
+                        text = analysis.displayName,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = TextPrimaryDark
+                        color = if (analysis.isOwner && analysis.displayName != analysis.playerName) MafiaCrimsonLight else TextPrimaryDark
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     StatusChip(

@@ -88,44 +88,97 @@ fun MainScreen(viewModel: MafiaViewModel) {
         val speakerSelections = remember { mutableMapOf<Long, Set<Long>>() }
         val speakerNoteTexts = remember { mutableMapOf<Long, String>() }
         val speakerNoteTagsMap = remember { mutableMapOf<Long, Set<String>>() }
+        // Track which speakers have completed their targeting this session
+        var completedSpeakerIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+
+        // Reset targeting state when stage changes (new day)
+        LaunchedEffect(currentStageIndex) {
+            completedSpeakerIds = emptySet()
+            speakerSelections.clear()
+            speakerNoteTexts.clear()
+            speakerNoteTagsMap.clear()
+        }
 
         // Full-screen override when a speaker is being targeted.
         val activeSpeaker = speakerFlowQueue.firstOrNull()
         if (activeSpeaker != null) {
-            SpeakerTargetScreen(
-                speaker = activeSpeaker,
-                allPlayers = players,
-                alreadyTargetedIds = emptySet(),
-                initialSelectedTargetIds = speakerSelections[activeSpeaker.id] ?: emptySet(),
-                initialNoteText = speakerNoteTexts[activeSpeaker.id] ?: "",
-                initialNoteTags = speakerNoteTagsMap[activeSpeaker.id] ?: emptySet(),
-                isLastPlayer = speakerFlowQueue.size == 1,
-                onBack = { speakerFlowQueue = emptyList() },
-                onSaveAndNext = { targetIds, noteText, noteTags ->
-                    viewModel.saveTargets(activeSpeaker.id, targetIds, true)
-                    val noteParts = buildList {
-                        if (noteText.isNotBlank()) add(noteText)
-                        addAll(noteTags)
+            // Compute previous stages' targets for this speaker (history)
+            // Include ALL previous stages, even empty ones (to show "تارگتی نزد")
+            val previousStageTargets = remember(targets, players, activeSpeaker.id, currentStageIndex) {
+                val playerMap = players.associateBy { it.id }
+                val grouped = targets
+                    .filter { it.sourcePlayerId == activeSpeaker.id && it.stageIndex < currentStageIndex }
+                    .groupBy { it.stageIndex }
+                    .mapValues { (_, targetList) ->
+                        targetList.mapNotNull { playerMap[it.targetPlayerId] }
                     }
-                    if (noteParts.isNotEmpty()) {
-                        viewModel.addNote(
-                            playerId = activeSpeaker.id,
-                            category = "speaker_targeting",
-                            text = noteParts.joinToString(" • ")
-                        )
-                    }
-                    // Persist this speaker's selections so the red circles
-                    // come back if the user re-opens this speaker.
-                    speakerSelections[activeSpeaker.id] = targetIds.toSet()
-                    speakerNoteTexts[activeSpeaker.id] = noteText
-                    speakerNoteTagsMap[activeSpeaker.id] = noteTags.toSet()
-                    // Pop the current speaker, continue with the rest.
-                    speakerFlowQueue = speakerFlowQueue.drop(1)
-                },
-                onSelectionChange = { ids ->
-                    speakerSelections[activeSpeaker.id] = ids
+                (0 until currentStageIndex).associateWith { stg ->
+                    grouped[stg] ?: emptyList()
                 }
-            )
+            }
+
+            // Compute previous stages' notes for this speaker
+            val previousStageNotes = remember(notes, activeSpeaker.id, currentStageIndex) {
+                notes
+                    .filter { it.playerId == activeSpeaker.id && it.stageIndex < currentStageIndex && it.category == "speaker_targeting" }
+                    .groupBy { it.stageIndex }
+                    .mapValues { (_, noteList) ->
+                        noteList.joinToString(" • ") { it.text }
+                    }
+            }
+
+            // key() forces Compose to fully recreate SpeakerTargetScreen
+            // when the speaker changes, so local state (selected target,s,
+            // notes) always starts fresh from the persisted maps below.
+            key(activeSpeaker.id) {
+                SpeakerTargetScreen(
+                    speaker = activeSpeaker,
+                    allPlayers = players,
+                    alreadyTargetedIds = emptySet(),
+                    initialSelectedTargetIds = speakerSelections[activeSpeaker.id] ?: emptySet(),
+                    initialNoteText = speakerNoteTexts[activeSpeaker.id] ?: "",
+                    initialNoteTags = speakerNoteTagsMap[activeSpeaker.id] ?: emptySet(),
+                    isLastPlayer = speakerFlowQueue.size == 1,
+                    previousStageTargets = previousStageTargets,
+                    previousStageNotes = previousStageNotes,
+                    currentStageIndex = currentStageIndex,
+                    onBack = { speakerFlowQueue = emptyList() },
+                    onSaveAndNext = { targetIds, noteText, noteTags ->
+                        viewModel.saveTargets(activeSpeaker.id, targetIds, true)
+                        val noteParts = buildList {
+                            if (noteText.isNotBlank()) add(noteText)
+                            addAll(noteTags)
+                        }
+                        if (noteParts.isNotEmpty()) {
+                            viewModel.addNote(
+                                playerId = activeSpeaker.id,
+                                category = "speaker_targeting",
+                                text = noteParts.joinToString(" • ")
+                            )
+                        }
+                        // If no targets were selected, record "no target" note
+                        if (targetIds.isEmpty()) {
+                            viewModel.addNote(
+                                playerId = activeSpeaker.id,
+                                category = "speaker_targeting",
+                                text = "تارگتی نزد"
+                            )
+                        }
+                        // Persist this speaker's selections so the red circles
+                        // come back if the user re-opens this speaker.
+                        speakerSelections[activeSpeaker.id] = targetIds.toSet()
+                        speakerNoteTexts[activeSpeaker.id] = noteText
+                        speakerNoteTagsMap[activeSpeaker.id] = noteTags.toSet()
+                        // Mark this speaker as completed (green tick on table)
+                        completedSpeakerIds = completedSpeakerIds + activeSpeaker.id
+                        // Pop the current speaker, continue with the rest.
+                        speakerFlowQueue = speakerFlowQueue.drop(1)
+                    },
+                    onSelectionChange = { ids ->
+                        speakerSelections[activeSpeaker.id] = ids
+                    }
+                )
+            }
             return@CompositionLocalProvider
         }
 
@@ -264,6 +317,8 @@ fun MainScreen(viewModel: MafiaViewModel) {
                             players = players,
                             activeSpeakersCount = players.count { !it.isEliminated },
                             activeGame = activeGame,
+                            currentStageIndex = currentStageIndex,
+                            completedSpeakerIds = completedSpeakerIds,
                             onStartTargeting = {
                                 val activeSpeakers = players.filter { !it.isEliminated }
                                 if (activeSpeakers.isNotEmpty()) {
@@ -274,7 +329,9 @@ fun MainScreen(viewModel: MafiaViewModel) {
                                 speakerFlowQueue = listOf(tapped)
                             },
                             onSwapPlayers = { id1, id2 -> viewModel.swapPlayers(id1, id2) },
-                            onMovePlayer = { p, up -> viewModel.movePlayer(p, up) }
+                            onMovePlayer = { p, up -> viewModel.movePlayer(p, up) },
+                            onTogglePlayerEliminated = { p -> viewModel.togglePlayerEliminated(p) },
+                            onEndDay = { viewModel.finishStageAndAdvance(currentStageIndex) }
                         )
                     }
 

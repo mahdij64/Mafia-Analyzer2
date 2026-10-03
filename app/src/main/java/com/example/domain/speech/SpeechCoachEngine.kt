@@ -25,6 +25,7 @@ data class SpeechGuide(
 data class SuspectTalkingTip(
     val playerId: Long,
     val playerName: String,
+    val displayName: String = playerName,
     val suspicionScore: Int,
     val isTeammate: Boolean,
     val colloquialArgument: String
@@ -169,6 +170,7 @@ object SpeechCoachEngine {
             SuspectTalkingTip(
                 playerId = s.playerId,
                 playerName = s.playerName,
+                displayName = s.displayName,
                 suspicionScore = s.totalScore,
                 isTeammate = isTeammate,
                 colloquialArgument = tip

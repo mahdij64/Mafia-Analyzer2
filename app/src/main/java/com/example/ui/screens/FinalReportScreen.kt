@@ -39,6 +39,7 @@ fun FinalReportScreen(
     scores: List<PlayerScoreAnalysis>,
     targets: List<TargetEntity>,
     notes: List<PlayerNoteEntity>,
+    currentStageIndex: Int = 0,
     onExportReport: () -> String,
     modifier: Modifier = Modifier
 ) {
@@ -131,7 +132,7 @@ fun FinalReportScreen(
                                 onClick = { selectedPlayerId = s.playerId },
                                 label = {
                                     Text(
-                                        text = "${s.playerName} (${s.totalScore})",
+                                        text = "${s.displayName} (${s.totalScore})",
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                     )
                                 },
@@ -154,7 +155,7 @@ fun FinalReportScreen(
             item {
                 SuspicionTrendChart(
                     stageScores = selectedScore.stageTrendScores,
-                    playerName = selectedScore.playerName,
+                    playerName = selectedScore.displayName,
                     modifier = Modifier.testTag("trend_chart_${selectedScore.playerId}")
                 )
             }
@@ -169,7 +170,7 @@ fun FinalReportScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "📊 آمار و شاخص‌های ثبت‌شده برای «${selectedScore.playerName}»:",
+                            text = "📊 آمار و شاخص‌های ثبت‌شده برای «${selectedScore.displayName}»:",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimaryDark
@@ -248,7 +249,7 @@ fun FinalReportScreen(
                         )
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        (0..4).forEach { stg ->
+                        (0..maxOf(currentStageIndex, 4)).forEach { stg ->
                             val stgTargets = myTargets.filter { it.stageIndex == stg }
                             val stgTitle = GameStage.getStage(stg).title
                             Row(
@@ -305,6 +306,7 @@ fun FinalReportScreen(
                                     "TALK" -> "🗣️ صحبت‌ها"
                                     "SUSPICIOUS" -> "⚠️ رفتار مشکوک"
                                     "OPINION" -> "💡 نظر شخصی"
+                                    "speaker_targeting" -> "🎯 تارگت‌زنی"
                                     else -> "📝 یادداشت آزاد"
                                 }
                                 val stgTitle = GameStage.getStage(note.stageIndex).title

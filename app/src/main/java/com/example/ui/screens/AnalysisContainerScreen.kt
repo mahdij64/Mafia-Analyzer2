@@ -47,11 +47,11 @@ fun AnalysisContainerScreen(
     var selectedSubTab by remember(initialSubTab) { mutableStateOf(initialSubTab) }
 
     val subTabs = listOf(
-        Pair("چی بگم؟ (راهنمای نطق) 🗣️", Icons.Default.RecordVoiceOver),
+        Pair("چی بگم؟ 🗣️", Icons.Default.RecordVoiceOver),
         Pair("گزارش روزانه", Icons.Default.Assessment),
         Pair("نقشه روابط", Icons.Default.Hub),
         Pair("روند و فینال", Icons.AutoMirrored.Filled.TrendingUp),
-        Pair("هوش مصنوعی", Icons.Default.AutoAwesome)
+        Pair("چت AI 🤖", Icons.Default.SmartToy)
     )
 
     Column(
@@ -126,16 +126,107 @@ fun AnalysisContainerScreen(
                     scores = scores,
                     targets = targets,
                     notes = notes,
+                    currentStageIndex = currentStageIndex,
                     onExportReport = onExportReport
                 )
-                4 -> AiAnalysisScreen(
-                    activeGame = activeGame,
-                    currentStageIndex = currentStageIndex,
-                    aiResult = aiResult,
-                    onRunAnalysis = onRunAiAnalysis,
-                    onClearAnalysis = onClearAiAnalysis
+                4 -> AiChatScreen(
+                    gameContextProvider = {
+                        buildGameContext(activeGame, players, scores, targets, notes, currentStageIndex)
+                    },
+                    activeGameName = activeGame?.name
                 )
             }
         }
     }
+}
+
+/**
+ * Build a comprehensive game context string for AI analysis.
+ */
+private fun buildGameContext(
+    activeGame: GameEntity?,
+    players: List<PlayerEntity>,
+    scores: List<PlayerScoreAnalysis>,
+    targets: List<TargetEntity>,
+    notes: List<PlayerNoteEntity>,
+    currentStageIndex: Int
+): String {
+    if (activeGame == null || players.isEmpty()) return ""
+
+    val sb = StringBuilder()
+    sb.appendLine("═══════════════════════════════════════")
+    sb.appendLine("📋 اطلاعات بازی")
+    sb.appendLine("═══════════════════════════════════════")
+    sb.appendLine("نام بازی: ${activeGame.name}")
+    sb.appendLine("سناریو: ${activeGame.citizenCount} شهروند / ${activeGame.mafiaCount} مافیا / ${activeGame.independentCount} مستقل")
+    sb.appendLine("مرحله فعلی: روز ${currentStageIndex + 1}")
+    sb.appendLine("تعداد بازیکنان: ${players.size}")
+    sb.append("")
+
+    // Players
+    sb.appendLine("═══════════════════════════════════════")
+    sb.appendLine("👥 بازیکنان")
+    sb.appendLine("═══════════════════════════════════════")
+    players.forEachIndexed { index, p ->
+        val status = if (p.isEliminated) "💀 حذف‌شده" else "🟢 زنده"
+        val ownerMark = if (p.id == activeGame.ownerPlayerId) " (👑 شما)" else ""
+        val score = scores.firstOrNull { it.playerId == p.id }
+        val scoreText = score?.let { " | امتیاز سوءظن: ${it.totalScore}%" } ?: ""
+        sb.appendLine("${index + 1}. صندلی ${index + 1}: $status$ownerMark$scoreText")
+    }
+    sb.append("")
+
+    // Targets per stage
+    sb.appendLine("═══════════════════════════════════════")
+    sb.appendLine("🎯 تاریخچه تارگت‌ها")
+    sb.appendLine("═══════════════════════════════════════")
+    for (stg in 0..currentStageIndex) {
+        val stgTargets = targets.filter { it.stageIndex == stg }
+        if (stgTargets.isNotEmpty()) {
+            sb.appendLine("روز ${stg + 1}:")
+            stgTargets.groupBy { it.sourcePlayerId }.forEach { (srcId, tList) ->
+                val srcSeat = players.indexOfFirst { it.id == srcId } + 1
+                val tgtSeats = tList.map { t ->
+                    val tgtSeat = players.indexOfFirst { it.id == t.targetPlayerId } + 1
+                    "${tgtSeat}"
+                }.joinToString("، ")
+                sb.appendLine("  صندلی $srcSeat → $tgtSeats")
+            }
+        }
+    }
+    sb.append("")
+
+    // Notes
+    sb.appendLine("═══════════════════════════════════════")
+    sb.appendLine("📝 یادداشت‌ها")
+    sb.appendLine("═══════════════════════════════════════")
+    val stageNotes = notes.filter { it.stageIndex == currentStageIndex }
+    if (stageNotes.isNotEmpty()) {
+        sb.appendLine("یادداشت‌های روز ${currentStageIndex + 1}:")
+        stageNotes.groupBy { it.playerId }.forEach { (pid, noteList) ->
+            val seat = players.indexOfFirst { it.id == pid } + 1
+            val text = noteList.joinToString(" | ") { it.text.take(50) }
+            sb.appendLine("  صندلی $seat: $text")
+        }
+    } else {
+        sb.appendLine("بدون یادداشت در این روز.")
+    }
+    sb.append("")
+
+    // Suspicion scores
+    sb.appendLine("═══════════════════════════════════════")
+    sb.appendLine("📊 رتبه‌بندی سوءظن (بالاترین تا کمترین)")
+    sb.appendLine("═══════════════════════════════════════")
+    val sortedScores = scores.sortedByDescending { it.totalScore }
+    sortedScores.forEachIndexed { index, s ->
+        val seat = players.indexOfFirst { it.id == s.playerId } + 1
+        val isAlive = players.firstOrNull { it.id == s.playerId }?.isEliminated == false
+        val status = if (isAlive) "🟢" else "💀"
+        sb.appendLine("${index + 1}. صندلی $seat: ${s.totalScore}% $status")
+    }
+    sb.append("")
+
+    sb.appendLine("═══════════════════════════════════════")
+    sb.appendLine("لطفاً بر اساس این داده‌ها تحلیل کن.")
+    return sb.toString()
 }

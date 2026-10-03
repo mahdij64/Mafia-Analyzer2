@@ -597,7 +597,7 @@ class MafiaViewModel(application: Application) : AndroidViewModel(application) {
         sb.appendLine("────────────────────")
         sb.appendLine("📊 رده‌بندی سوءظن بازیکنان:")
         pScores.forEachIndexed { i, s ->
-            sb.appendLine("${i + 1}. ${s.playerName} ── ${s.totalScore}/100 (${s.statusLabel})")
+            sb.appendLine("${i + 1}. ${s.displayName} ── ${s.totalScore}/100 (${s.statusLabel})")
             if (s.positiveFactors.isNotEmpty()) {
                 sb.appendLine("   ⚠️ دلایل اصلی: " + s.positiveFactors.take(2).joinToString(" | ") { it.title })
             }
@@ -610,8 +610,12 @@ class MafiaViewModel(application: Application) : AndroidViewModel(application) {
             sb.appendLine("تارگتی ثبت نشده است.")
         } else {
             stgTargets.groupBy { it.sourcePlayerId }.forEach { (src, tgList) ->
-                val srcName = playerMap[src]?.name ?: "ناشناس"
-                val tgtNames = tgList.mapNotNull { playerMap[it.targetPlayerId]?.name }.joinToString("، ")
+                val srcScore = pScores.firstOrNull { it.playerId == src }
+                val srcName = srcScore?.displayName ?: playerMap[src]?.name ?: "ناشناس"
+                val tgtNames = tgList.joinToString("، ") { t ->
+                    val tgtScore = pScores.firstOrNull { it.playerId == t.targetPlayerId }
+                    tgtScore?.displayName ?: playerMap[t.targetPlayerId]?.name ?: "ناشناس"
+                }
                 sb.appendLine("$srcName → $tgtNames")
             }
         }
