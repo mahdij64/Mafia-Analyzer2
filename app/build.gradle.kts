@@ -19,6 +19,8 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    buildConfigField("String", "GEMINI_API_KEY", "\"MY_GEMINI_API_KEY\"")
   }
 
   signingConfigs {
@@ -61,8 +63,6 @@ android {
     includeInApk = false
     includeInBundle = true
   }
-
-  buildConfigField("String", "GEMINI_API_KEY", "\"MY_GEMINI_API_KEY\"")
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
