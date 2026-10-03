@@ -347,6 +347,7 @@ private fun PlayerCircle(
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun NotesTagsBlock(
     selectedTags: Set<String>,
