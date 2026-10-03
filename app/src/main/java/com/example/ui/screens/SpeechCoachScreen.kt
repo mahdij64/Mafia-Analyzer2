@@ -240,7 +240,7 @@ fun SpeechCoachScreen(
 
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "⚡ این نطق بر اساس تارگت‌های ثبت‌شده، یادداشت‌های دست‌نویس و نقش شما (${guide.ownerRole}) بازنویسی شده است.",
+                        text = "⚡ این نطق بر اساس تارگت‌های ثبت‌شده، یادداشت‌های دست‌نویس و نقش شما (${ownerRoleLabel(ownerRole)}) بازنویسی شده است.",
                         fontSize = 10.sp,
                         color = TextMutedDark
                     )
@@ -456,4 +456,10 @@ fun SpeechCoachScreen(
             }
         }
     }
+}
+
+private fun ownerRoleLabel(role: String): String = when (role) {
+    "MAFIA" -> "مافیا 🗡️"
+    "INDEPENDENT" -> "مستقل 🎭"
+    else -> "شهروند 🛡️"
 }
