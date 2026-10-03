@@ -122,11 +122,6 @@ fun SpeechCoachScreen(
                                 "INDEPENDENT" -> Color(0xFFE65100)
                                 else -> Color(0xFF0D47A1)
                             }
-                            val roleLabel = when (ownerRole) {
-                                "MAFIA" -> "مافیا 🗡️"
-                                "INDEPENDENT" -> "مستقل 🎭"
-                                else -> "شهروند 🛡️"
-                            }
                             val ownerName = ownerPlayer?.name ?: "تعیین نشده"
                             val ownerColor = when (ownerRole) {
                                 "MAFIA" -> Color(0xFF9C27B0)
@@ -138,24 +133,13 @@ fun SpeechCoachScreen(
                                 color = roleBadgeColor,
                                 border = BorderStroke(0.5.dp, MafiaGold)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
+                                Text(
+                                    text = ownerName,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = ownerColor,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                ) {
-                                    Text(
-                                        text = ownerName,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = ownerColor
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "($roleLabel)",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = Color.White
-                                    )
-                                }
+                                )
                             }
                         }
 
