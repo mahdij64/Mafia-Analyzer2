@@ -111,36 +111,23 @@ fun SpeechCoachScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "👑 هویت شما:",
+                                text = "شما : ",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MafiaGold
+                                color = TextPrimaryDark
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            val roleBadgeColor = when (ownerRole) {
-                                "MAFIA" -> MafiaCrimsonDark
-                                "INDEPENDENT" -> Color(0xFFE65100)
-                                else -> Color(0xFF0D47A1)
-                            }
                             val ownerName = ownerPlayer?.name ?: "تعیین نشده"
                             val ownerColor = when (ownerRole) {
                                 "MAFIA" -> Color(0xFF9C27B0)
                                 "INDEPENDENT" -> Color(0xFF2196F3)
                                 else -> Color(0xFF4CAF50)
                             }
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = roleBadgeColor,
-                                border = BorderStroke(0.5.dp, MafiaGold)
-                            ) {
-                                Text(
-                                    text = ownerName,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = ownerColor,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
-                            }
+                            Text(
+                                text = ownerName,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = ownerColor
+                            )
                         }
 
                     }
